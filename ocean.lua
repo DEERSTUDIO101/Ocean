@@ -1,8 +1,3 @@
--- ╔══════════════════════════════════════════════════════╗
--- ║           Ocean UI Library  •  Core                 ║
--- ║     Dark & Blue  •  Roblox-style  •  by Ocean       ║
--- ╚══════════════════════════════════════════════════════╝
-
 local Ocean = {}
 Ocean.__index = Ocean
 
@@ -288,9 +283,7 @@ function Ocean:Notify(config)
     return card
 end
 
--- ══════════════════════════════════════════════════════
 --  WINDOW
--- ══════════════════════════════════════════════════════
 
 function Ocean:Window(config)
     config = config or {}
@@ -635,9 +628,7 @@ function Ocean:Window(config)
     return W
 end
 
--- ══════════════════════════════════════════════════════
 --  ELEMENTS  (Button · Toggle · Slider · Section · Label)
--- ══════════════════════════════════════════════════════
 
 -- ─── Section header ───────────────────────────────────
 function Ocean:Section(tab, config)
@@ -1345,8 +1336,4 @@ function Ocean:Keybind(tab, config)
         end,
     }
 end
-
--- ─── Ready ────────────────────────────────────────────
-print("[Ocean] Fully loaded ✓")
-
 return Ocean
