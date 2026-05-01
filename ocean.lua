@@ -293,16 +293,14 @@ function Ocean:Window(config)
     local title    = config.Title    or "Ocean"
     local subtitle = config.Subtitle or ""
     local size     = config.Size     or Vector2.new(560, 400)
-    local logo     = config.Logo     or nil   -- rbxassetid://...
+    local logo     = config.Logo     or nil
 
     local T = self.Theme
     local root = self._root()
 
-    -- cleanup old gui
     local old = root:FindFirstChild("OceanUI")
     if old then old:Destroy() end
 
-    -- ── ScreenGui ──────────────────────────────────────
     local sg = make("ScreenGui", {
         Name           = "OceanUI",
         ResetOnSpawn   = false,
@@ -310,314 +308,211 @@ function Ocean:Window(config)
         ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
     }, root)
 
-    -- ── Main window frame ──────────────────────────────
-    local win = make("Frame", {
-        Name             = "Window",
+    -- ── Navbar ─────────────────────────────────────────
+    local navbar = make("Frame", {
+        Name             = "Navbar",
+        BackgroundColor3 = Color3.fromRGB(0, 80, 120),
+        Position         = UDim2.new(0, 0, 0, -60),
+        Size             = UDim2.new(1, 0, 0, 55),
+        BorderSizePixel  = 0,
+        ZIndex           = 100,
+        Visible          = false,
+    }, sg)
+
+    local gradient = make("UIGradient", {
+        Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 45, 80)),
+            ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 140, 200)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 220, 255))
+        }),
+        Rotation = 0,
+    }, navbar)
+
+    make("UIStroke", {
+        Color        = Color3.fromRGB(255, 255, 255),
+        Transparency = 0.75,
+        Thickness    = 1,
+    }, navbar)
+
+    make("TextLabel", {
+        Name                   = "Logo",
+        Text                   = "🌊 Ocean",
+        TextColor3             = Color3.fromRGB(255, 255, 255),
+        Font                   = Enum.Font.GothamBold,
+        TextSize               = 22,
+        BackgroundTransparency = 1,
+        Position               = UDim2.new(0, 20, 0, 0),
+        Size                   = UDim2.new(0, 150, 1, 0),
+        TextXAlignment         = Enum.TextXAlignment.Left,
+    }, navbar)
+
+    local tabContainer = make("Frame", {
+        Name                   = "TabContainer",
+        BackgroundTransparency = 1,
+        Position               = UDim2.new(0.5, -300, 0, 0),
+        Size                   = UDim2.new(0, 600, 1, 0),
+    }, navbar)
+
+    make("UIListLayout", {
+        FillDirection       = Enum.FillDirection.Horizontal,
+        HorizontalAlignment = Enum.HorizontalAlignment.Center,
+        VerticalAlignment   = Enum.VerticalAlignment.Center,
+        SortOrder           = Enum.SortOrder.LayoutOrder,
+        Padding             = UDim.new(0, 15),
+    }, tabContainer)
+
+    -- ── Main window frame (Content Area) ───────────────
+    local win = make("CanvasGroup", {
+        Name             = "OceanContent",
         BackgroundColor3 = T.Surface,
         Size             = UDim2.fromOffset(size.X, size.Y),
         Position         = UDim2.new(0.5, -size.X/2, 0.5, -size.Y/2),
         BorderSizePixel  = 0,
-        ClipsDescendants = false, -- False to allow drop shadow to show
+        GroupTransparency= 1,
+        Visible          = false,
     }, sg)
     corner(win, 12)
     stroke(win, T.Border, 1.2)
 
-    -- Drop Shadow
     local shadow = make("ImageLabel", {
         Name = "DropShadow",
         BackgroundTransparency = 1,
-        Position = UDim2.new(0, -35, 0, -35),
-        Size = UDim2.new(1, 70, 1, 70),
+        Position = UDim2.new(0.5, -(size.X+70)/2, 0.5, -(size.Y+70)/2),
+        Size = UDim2.fromOffset(size.X + 70, size.Y + 70),
         ZIndex = -10,
-        Image = "rbxassetid://6015897843", -- Soft glow / shadow asset
+        Image = "rbxassetid://6015897843",
         ImageColor3 = Color3.new(0,0,0),
-        ImageTransparency = 0.35,
+        ImageTransparency = 1,
         ScaleType = Enum.ScaleType.Slice,
-        SliceCenter = Rect.new(49, 49, 450, 450)
-    }, win)
+        SliceCenter = Rect.new(49, 49, 450, 450),
+        Visible = false,
+    }, sg)
 
-    -- subtle inner gradient (top glow)
-    local grad = make("UIGradient", {
+    make("UIGradient", {
         Color    = ColorSequence.new({
-            ColorSequenceKeypoint.new(0,   Color3.fromRGB(40, 70, 140)), -- Stronger glow
+            ColorSequenceKeypoint.new(0,   Color3.fromRGB(40, 70, 140)),
             ColorSequenceKeypoint.new(0.4, T.Surface),
             ColorSequenceKeypoint.new(1,   T.Surface),
         }),
         Rotation = 90,
     }, win)
 
-    -- ── Content area ──────────────────────────────────
     local contentArea = make("Frame", {
         Name             = "Content",
         BackgroundTransparency = 1,
-        Position         = UDim2.new(0, 140, 0, 50),
-        Size             = UDim2.new(1, -140, 1, -50),
+        Position         = UDim2.new(0, 0, 0, 10),
+        Size             = UDim2.new(1, 0, 1, -20),
         ClipsDescendants = true,
     }, win)
 
-    -- ── Window object ───────────────────────────────────────
-    local titlebar = make("Frame", {
-        Name             = "Titlebar",
-        BackgroundColor3 = T.Surface2,
-        Size             = UDim2.new(1, 0, 0, 50),
-        BorderSizePixel  = 0,
-    }, win)
-    corner(titlebar, 12)
-
-    -- bottom fill to kill bottom corners of titlebar
-    make("Frame", {
-        BackgroundColor3 = T.Surface2,
-        Position         = UDim2.new(0, 0, 1, -10),
-        Size             = UDim2.new(1, 0, 0, 10),
-        BorderSizePixel  = 0,
-    }, titlebar)
-
-    -- titlebar bottom border line
-    make("Frame", {
-        BackgroundColor3 = T.Border,
-        Position         = UDim2.new(0, 0, 1, -1),
-        Size             = UDim2.new(1, 0, 0, 1),
-        BorderSizePixel  = 0,
-    }, titlebar)
-
-    -- logo / icon
-    local logoX = 14
-    if logo then
-        make("ImageLabel", {
-            Image            = logo,
-            BackgroundTransparency = 1,
-            Position         = UDim2.new(0, 12, 0.5, -11),
-            Size             = UDim2.fromOffset(22, 22),
-        }, titlebar)
-        logoX = 42
-    end
-
-    -- title text
-    make("TextLabel", {
-        Text             = title,
-        TextColor3       = T.TextPrimary,
-        Font             = Enum.Font.GothamMedium,
-        TextSize         = 16,
-        BackgroundTransparency = 1,
-        Position         = UDim2.new(0, logoX, 0, 7),
-        Size             = UDim2.new(0.5, 0, 0, 20),
-        TextXAlignment   = Enum.TextXAlignment.Left,
-    }, titlebar)
-
-    -- subtitle text
-    if subtitle ~= "" then
-        make("TextLabel", {
-            Text             = subtitle,
-            TextColor3       = T.TextDim,
-            Font             = Enum.Font.Gotham,
-            TextSize         = 11,
-            BackgroundTransparency = 1,
-            Position         = UDim2.new(0, logoX, 0, 28),
-            Size             = UDim2.new(0.5, 0, 0, 14),
-            TextXAlignment   = Enum.TextXAlignment.Left,
-        }, titlebar)
-    end
-
-    -- close button
-    local closeBtn = make("TextButton", {
-        Text             = "✕",
-        TextColor3       = T.TextDim,
+    local exploreBtn = make("TextButton", {
+        Name             = "ExploreBtn",
+        Text             = "Explore",
+        TextColor3       = Color3.fromRGB(0, 50, 70),
+        BackgroundColor3 = Color3.fromRGB(0, 255, 255),
         Font             = Enum.Font.GothamBold,
-        TextSize         = 13,
-        BackgroundColor3 = T.Surface3,
-        Size             = UDim2.fromOffset(28, 28),
-        Position         = UDim2.new(1, -38, 0.5, -14),
-        BorderSizePixel  = 0,
+        TextSize         = 15,
+        Position         = UDim2.new(1, -130, 0.5, -17),
+        Size             = UDim2.fromOffset(110, 34),
         AutoButtonColor  = false,
-    }, titlebar)
-    corner(closeBtn, 7)
+    }, navbar)
+    corner(exploreBtn, 17)
 
-    closeBtn.MouseEnter:Connect(function()
-        tween(closeBtn, fast, { BackgroundColor3 = T.Danger, TextColor3 = T.TextPrimary })
+    exploreBtn.MouseEnter:Connect(function()
+        tween(exploreBtn, fast, { BackgroundColor3 = Color3.fromRGB(255, 255, 255) })
     end)
-    closeBtn.MouseLeave:Connect(function()
-        tween(closeBtn, fast, { BackgroundColor3 = T.Surface3, TextColor3 = T.TextDim })
-    end)
-    closeBtn.MouseButton1Click:Connect(function()
-        tween(win, smooth, { BackgroundTransparency = 1 })
-        task.wait(0.35)
-        sg:Destroy()
+    exploreBtn.MouseLeave:Connect(function()
+        tween(exploreBtn, fast, { BackgroundColor3 = Color3.fromRGB(0, 255, 255) })
     end)
 
-    -- minimise button
-    local minBtn = make("TextButton", {
-        Text             = "─",
-        TextColor3       = T.TextDim,
-        Font             = Enum.Font.GothamBold,
-        TextSize         = 13,
-        BackgroundColor3 = T.Surface3,
-        Size             = UDim2.fromOffset(28, 28),
-        Position         = UDim2.new(1, -72, 0.5, -14),
-        BorderSizePixel  = 0,
-        AutoButtonColor  = false,
-    }, titlebar)
-    corner(minBtn, 7)
-
-    local minimised = false
-    minBtn.MouseEnter:Connect(function()
-        tween(minBtn, fast, { BackgroundColor3 = T.AccentDark, TextColor3 = T.TextPrimary })
-    end)
-    minBtn.MouseLeave:Connect(function()
-        tween(minBtn, fast, { BackgroundColor3 = T.Surface3, TextColor3 = T.TextDim })
-    end)
-    minBtn.MouseButton1Click:Connect(function()
-        minimised = not minimised
-        if minimised then
-            tween(win, smooth, { Size = UDim2.fromOffset(size.X, 50) })
+    local isVisible = false
+    
+    local function toggleWindow(force)
+        if force ~= nil then
+            isVisible = force
         else
-            tween(win, smooth, { Size = UDim2.fromOffset(size.X, size.Y) })
+            isVisible = not isVisible
         end
-    end)
-
-    -- drag
-    self._drag(titlebar, win)
-
-    -- Tab bar (left sidebar) ─────────────────────────
-    local sidebar = make("Frame", {
-        Name             = "Sidebar",
-        BackgroundColor3 = T.Surface, -- Changed from BG for contrast
-        Position         = UDim2.new(0, 0, 0, 50),
-        Size             = UDim2.new(0, 140, 1, -50), -- Made slightly wider
-        BorderSizePixel  = 0,
-    }, win)
-    
-    corner(sidebar, 12)
-    
-    -- bottom/right fill to kill corners correctly
-    make("Frame", {
-        BackgroundColor3 = T.Surface,
-        Position         = UDim2.new(1, -10, 0, 0),
-        Size             = UDim2.new(0, 10, 1, 0),
-        BorderSizePixel  = 0,
-    }, sidebar)
-    make("Frame", {
-        BackgroundColor3 = T.Surface,
-        Position         = UDim2.new(0, 0, 0, 0),
-        Size             = UDim2.new(1, 0, 0, 10),
-        BorderSizePixel  = 0,
-    }, sidebar)
-
-    -- sidebar right border
-    make("Frame", {
-        BackgroundColor3 = T.Border,
-        Position         = UDim2.new(1, -1, 0, 0),
-        Size             = UDim2.new(0, 1, 1, 0),
-        BorderSizePixel  = 0,
-    }, sidebar)
-
-    local tabList = make("Frame", {
-        BackgroundTransparency = 1,
-        Position = UDim2.new(0, 0, 0, 8),
-        Size     = UDim2.new(1, 0, 1, -8),
-    }, sidebar)
-    make("UIListLayout", {
-        SortOrder = Enum.SortOrder.LayoutOrder,
-        Padding   = UDim.new(0, 6),
-    }, tabList)
-    padding(tabList, nil, 0, 0, 12, 12)
-
-    -- ── Topbar Toggle Button ───────────────────────────
-    local topbarBtn = make("ImageButton", {
-        Name             = "TopbarToggle",
-        BackgroundColor3 = T.Surface,
-        Position         = UDim2.new(0, 160, 0, -4), -- Oben links, direkt neben dem Roblox Menü (160px offset)
-        Size             = UDim2.fromOffset(36, 36),
-        Image            = logo or "rbxassetid://10618549321",
-        ImageRectOffset  = Vector2.new(0,0),
-        ImageRectSize    = Vector2.new(0,0),
-        ScaleType        = Enum.ScaleType.Fit,
-        BorderSizePixel  = 0,
-        AutoButtonColor  = false,
-    }, sg)
-    corner(topbarBtn, 18) -- Rund
-    stroke(topbarBtn, T.Border, 1.2, 0.2)
-    padding(topbarBtn, 8)
-    
-    -- Drop shadow for the topbar button
-    make("UIStroke", {
-        Color = Color3.new(0,0,0),
-        Thickness = 2,
-        Transparency = 0.8
-    }, topbarBtn)
-
-    topbarBtn.MouseEnter:Connect(function() tween(topbarBtn, fast, { BackgroundColor3 = T.Surface3 }) end)
-    topbarBtn.MouseLeave:Connect(function() tween(topbarBtn, fast, { BackgroundColor3 = T.Surface }) end)
-
-    local isVisible = true
-    topbarBtn.MouseButton1Click:Connect(function()
-        isVisible = not isVisible
         if isVisible then
             win.Visible = true
-            tween(win, fast, { Size = UDim2.fromOffset(size.X, size.Y), BackgroundTransparency = 0 })
+            shadow.Visible = true
+            tween(win, smooth, { Size = UDim2.fromOffset(size.X, size.Y), GroupTransparency = 0 })
+            tween(shadow, smooth, { ImageTransparency = 0.35 })
         else
-            tween(win, fast, { Size = UDim2.fromOffset(size.X * 0.9, size.Y * 0.9), BackgroundTransparency = 1 })
-            task.delay(0.2, function() win.Visible = false end)
+            tween(win, smooth, { Size = UDim2.fromOffset(size.X * 0.9, size.Y * 0.9), GroupTransparency = 1 })
+            tween(shadow, smooth, { ImageTransparency = 1 })
+            task.delay(0.35, function() win.Visible = false; shadow.Visible = false end)
         end
+    end
+
+    exploreBtn.MouseButton1Click:Connect(function()
+        toggleWindow()
     end)
 
-    -- Draggable Topbar Button
-    self._drag(topbarBtn, topbarBtn)
+    local dragHandle = make("Frame", {
+        Name = "DragHandle",
+        BackgroundTransparency = 1,
+        Size = UDim2.new(1, 0, 0, 40),
+        ZIndex = 100,
+    }, win)
+    self._drag(dragHandle, win)
+    win:GetPropertyChangedSignal("Position"):Connect(function()
+        shadow.Position = UDim2.new(0, win.AbsolutePosition.X - 35, 0, win.AbsolutePosition.Y - 35)
+    end)
+
     local W = {
         _gui        = sg,
         _win        = win,
-        _sidebar    = sidebar,
-        _tabList    = tabList,
+        _navbar     = navbar,
+        _tabList    = tabContainer,
         _content    = contentArea,
         _tabs       = {},
         _activeTab  = nil,
         _library    = self,
+        _toggle     = toggleWindow,
     }
     table.insert(self.Windows, sg)
 
-    -- ── Tab method ────────────────────────────────────
     function W:Tab(tabConfig)
         tabConfig = tabConfig or {}
         local tabName = tabConfig.Name or "Tab"
-        local tabIcon = tabConfig.Icon or nil  -- rbxassetid://...
 
-        local T2 = self._library.Theme
-
-        -- sidebar button
         local btn = make("TextButton", {
-            Text             = (tabIcon and "  " or "") .. tabName,
-            TextColor3       = T2.TextSub,
-            Font             = Enum.Font.GothamMedium,
+            Text             = tabName,
+            TextColor3       = Color3.fromRGB(255, 255, 255),
+            Font             = Enum.Font.GothamSemibold,
             TextSize         = 14,
-            BackgroundColor3 = T2.BG,
-            Size             = UDim2.new(1, 0, 0, 36),
-            BorderSizePixel  = 0,
+            BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+            BackgroundTransparency = 0.88,
+            Size             = UDim2.fromOffset(90, 32),
             AutoButtonColor  = false,
-            TextXAlignment   = Enum.TextXAlignment.Left,
-            BackgroundTransparency = 1,
         }, self._tabList)
-        corner(btn, 6)
-        padding(btn, nil, 0, 0, tabIcon and 34 or 14, 6)
+        corner(btn, 8)
 
-        if tabIcon then
-            make("ImageLabel", {
-                Image            = tabIcon,
-                BackgroundTransparency = 1,
-                Position         = UDim2.new(0, 8, 0.5, -8),
-                Size             = UDim2.fromOffset(16, 16),
-            }, btn)
-        end
+        local tab = {
+            _btn       = btn,
+            _page      = nil,
+            _window    = self,
+            _library   = self._library,
+        }
 
-        -- active indicator bar
-        local indicator = make("Frame", {
-            BackgroundColor3 = T2.Accent,
-            Position         = UDim2.new(0, 2, 0.5, -9),
-            Size             = UDim2.new(0, 3, 0, 18),
-            BorderSizePixel  = 0,
-            Visible          = false,
-        }, btn)
-        corner(indicator, 2)
+        btn.MouseEnter:Connect(function()
+            if self._activeTab ~= tab then
+                tween(btn, fast, { BackgroundTransparency = 0.7, Size = UDim2.fromOffset(94, 34) })
+            end
+        end)
+        btn.MouseLeave:Connect(function()
+            if self._activeTab ~= tab then
+                tween(btn, fast, { BackgroundTransparency = 0.88, Size = UDim2.fromOffset(90, 32) })
+            end
+        end)
+        btn.MouseButton1Click:Connect(function()
+            self:_setTab(tab)
+            if not isVisible then
+                toggleWindow(true)
+            end
+        end)
 
-        -- tab content page
         local page = make("ScrollingFrame", {
             BackgroundTransparency = 1,
             Position         = UDim2.new(0, 0, 0, 0),
@@ -625,7 +520,7 @@ function Ocean:Window(config)
             CanvasSize       = UDim2.new(0, 0, 0, 0),
             AutomaticCanvasSize = Enum.AutomaticSize.Y,
             ScrollBarThickness = 3,
-            ScrollBarImageColor3 = T2.Accent,
+            ScrollBarImageColor3 = T.Accent,
             BorderSizePixel  = 0,
             Visible          = false,
         }, self._content)
@@ -634,61 +529,29 @@ function Ocean:Window(config)
             SortOrder = Enum.SortOrder.LayoutOrder,
             Padding   = UDim.new(0, 6),
         }, page)
-        padding(page, nil, 10, 10, 12, 12)
+        padding(page, nil, 14, 14, 14, 14)
 
-        local tab = {
-            _btn       = btn,
-            _page      = page,
-            _indicator = indicator,
-            _window    = self,
-            _library   = self._library,
-            _order     = 0,
-        }
+        tab._page = page
         table.insert(self._tabs, tab)
 
-        -- activate on click
-        btn.MouseButton1Click:Connect(function()
-            self:_setTab(tab)
-        end)
-
-        btn.MouseEnter:Connect(function()
-            if self._activeTab ~= tab then
-                tween(btn, fast, { BackgroundColor3 = T2.Surface3, TextColor3 = T2.TextPrimary })
-            end
-        end)
-        btn.MouseLeave:Connect(function()
-            if self._activeTab ~= tab then
-                tween(btn, fast, { BackgroundColor3 = T2.BG, TextColor3 = T2.TextSub })
-            end
-        end)
-
-        -- auto-activate first tab
         if #self._tabs == 1 then
             self:_setTab(tab)
         end
 
-        -- add elements to this tab
         setmetatable(tab, { __index = self._library })
-        tab._page = page
         return tab
     end
 
     function W:_setTab(tab)
         for _, t in ipairs(self._tabs) do
-            t._page.Visible    = false
-            t._indicator.Visible = false
-            tween(t._btn, fast, {
-                BackgroundColor3 = self._library.Theme.BG,
-                TextColor3       = self._library.Theme.TextSub,
-            })
+            t._page.Visible = false
+            if t ~= tab then
+                tween(t._btn, fast, { BackgroundTransparency = 0.88, Size = UDim2.fromOffset(90, 32) })
+            end
         end
         self._activeTab = tab
-        tab._page.Visible    = true
-        tab._indicator.Visible = true
-        tween(tab._btn, fast, {
-            BackgroundColor3 = self._library.Theme.Surface3,
-            TextColor3       = self._library.Theme.TextPrimary,
-        })
+        tab._page.Visible = true
+        tween(tab._btn, fast, { BackgroundTransparency = 0.6, Size = UDim2.fromOffset(94, 34) })
     end
 
     -- ─── Ocean Loading Animation ─────────────────────────
@@ -698,10 +561,12 @@ function Ocean:Window(config)
         Name = "LoadingOverlay",
         BackgroundColor3 = Color3.fromRGB(0, 0, 0),
         Size = UDim2.new(1, 0, 1, 0),
+        Position = UDim2.new(0, 0, 0, 0),
         ZIndex = 1000,
+        BackgroundTransparency = 0,
         BorderSizePixel = 0,
     }, sg)
-
+    
     local stage = make("Frame", {
         BackgroundTransparency = 1,
         AnchorPoint = Vector2.new(0.5, 0.5),
@@ -710,134 +575,95 @@ function Ocean:Window(config)
         ZIndex = 1001,
     }, loadFrame)
 
-    local chars = { "}", "<", "(", "(", "(", "*", ">" }
-    local xOffsets = { 0, 68, 130, 190, 250, 315, 352 }
-    local yOffsets = { 128, 122, 122, 122, 122, 84, 122 }
-    local sizes = { 116, 108, 108, 108, 108, 62, 108 }
-
-    for i, ch in ipairs(chars) do
-        local lbl = make("TextLabel", {
-            Text = ch,
-            Font = Enum.Font.Code,
-            TextSize = sizes[i],
-            TextColor3 = Color3.fromRGB(178, 178, 178),
-            BackgroundTransparency = 1,
-            Position = UDim2.new(0, xOffsets[i], 0, yOffsets[i] - sizes[i] + 16),
-            Size = UDim2.fromOffset(sizes[i], sizes[i]),
-            TextTransparency = 1,
-            ZIndex = 1002,
-        }, stage)
-
-        local delay = 0.05 + ((i-1) * 0.17)
-        task.delay(delay, function()
-            tween(lbl, TweenInfo.new(0.35, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {
-                TextTransparency = 0,
-                Position = UDim2.new(0, xOffsets[i], 0, yOffsets[i] - sizes[i])
-            })
-        end)
-    end
-
-    -- Shimmer Effect
-    local shimmer = make("Frame", {
-        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-        BackgroundTransparency = 0.82,
-        BorderSizePixel = 0,
-        Size = UDim2.new(0, 60, 1, 0),
-        Position = UDim2.new(0, -100, 0, 0),
-        ZIndex = 1003,
-        Rotation = 15,
+    local logoTxtL = make("TextLabel", {
+        Text = "",
+        Font = Enum.Font.Code,
+        TextSize = 48,
+        TextColor3 = Color3.fromRGB(255, 255, 255),
+        Size = UDim2.new(1, 0, 0, 60),
+        Position = UDim2.new(0, 0, 0.5, -40),
+        BackgroundTransparency = 1,
+        TextTransparency = 1,
+        RichText = true
     }, stage)
     
-    local shimmerGrad = make("UIGradient", {
-        Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, Color3.new(1,1,1)),
-            ColorSequenceKeypoint.new(0.5, Color3.new(1,1,1)),
-            ColorSequenceKeypoint.new(1, Color3.new(1,1,1))
-        }),
-        Transparency = NumberSequence.new({
-            NumberSequenceKeypoint.new(0, 1),
-            NumberSequenceKeypoint.new(0.4, 1),
-            NumberSequenceKeypoint.new(0.5, 0),
-            NumberSequenceKeypoint.new(0.6, 1),
-            NumberSequenceKeypoint.new(1, 1),
-        })
-    }, shimmer)
-
-    task.delay(1.2, function()
-        tween(shimmer, TweenInfo.new(0.9, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), {
-            Position = UDim2.new(1, 100, 0, 0)
-        })
-    end)
-
-    -- Subtitle
-    local subtitle = make("TextLabel", {
-        Text = "O C E A N   D E V E L O P M E N T",
-        Font = Enum.Font.Gotham,
-        TextSize = 13,
-        TextColor3 = Color3.fromRGB(176, 176, 176),
+    local subTxt = make("TextLabel", {
+        Text = "INITIALIZING OCEAN...",
+        Font = Enum.Font.GothamMedium,
+        TextSize = 14,
+        TextColor3 = T.TextSub,
+        Size = UDim2.new(1, 0, 0, 20),
+        Position = UDim2.new(0, 0, 0.5, 30),
         BackgroundTransparency = 1,
-        Position = UDim2.new(0.5, 0, 1, 20),
-        Size = UDim2.new(0, 300, 0, 20),
-        AnchorPoint = Vector2.new(0.5, 0),
         TextTransparency = 1,
-        ZIndex = 1002,
+        TextSpacing = 4
     }, stage)
-
-    task.delay(1.6, function()
-        tween(subtitle, TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-            TextTransparency = 0,
-            Position = UDim2.new(0.5, 0, 1, 16)
-        })
-    end)
-
-    -- Loading Bar
-    local barWrap = make("Frame", {
-        BackgroundColor3 = Color3.fromRGB(17, 17, 17),
-        Position = UDim2.new(0.5, -90, 1, 50),
-        Size = UDim2.new(0, 180, 0, 1),
+    
+    local grad = make("UIGradient", {
+        Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 150, 255)),
+            ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 255, 255)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 150, 255))
+        }),
+        Rotation = 45
+    }, logoTxtL)
+    
+    local progBg = make("Frame", {
+        Size = UDim2.new(0, 200, 0, 2),
+        Position = UDim2.new(0.5, -100, 0.5, 60),
+        BackgroundColor3 = Color3.fromRGB(30, 30, 30),
         BorderSizePixel = 0,
-        BackgroundTransparency = 1,
-        ZIndex = 1002,
-        ClipsDescendants = true,
+        BackgroundTransparency = 1
     }, stage)
-
-    local barFill = make("Frame", {
-        BackgroundColor3 = Color3.fromRGB(170, 170, 170),
+    
+    local progFill = make("Frame", {
         Size = UDim2.new(0, 0, 1, 0),
+        BackgroundColor3 = Color3.fromRGB(0, 255, 255),
         BorderSizePixel = 0,
-        ZIndex = 1003,
-    }, barWrap)
-
-    task.delay(1.8, function()
-        tween(barWrap, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { BackgroundTransparency = 0 })
-    end)
-
-    task.delay(1.9, function()
-        tween(barFill, TweenInfo.new(2.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-            Size = UDim2.new(1, 0, 1, 0)
-        })
-    end)
-
-    -- Transition to Main UI
-    task.delay(4.2, function()
-        tween(loadFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { BackgroundTransparency = 1 })
-        for _, desc in ipairs(stage:GetDescendants()) do
-            if desc:IsA("TextLabel") then
-                tween(desc, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { TextTransparency = 1 })
-            elseif desc:IsA("Frame") then
-                tween(desc, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { BackgroundTransparency = 1 })
-            end
+    }, progBg)
+    
+    local fish = { "}", "<", "(", "(", "(", "*", ">" }
+    local currentText = ""
+    
+    task.spawn(function()
+        tween(subTxt, smooth, { TextTransparency = 0 })
+        tween(progBg, smooth, { BackgroundTransparency = 0 })
+        
+        for i, char in ipairs(fish) do
+            currentText = currentText .. char
+            logoTxtL.Text = currentText
+            tween(logoTxtL, fast, { TextTransparency = 0 })
+            task.wait(0.15)
         end
-
-        task.delay(0.6, function()
-            loadFrame:Destroy()
-            win.Visible = true
-            win.BackgroundTransparency = 1
-            win.Size = UDim2.fromOffset(size.X * 0.92, size.Y * 0.92)
-            tween(win, smooth, {
-                BackgroundTransparency = 0,
-                Size = UDim2.fromOffset(size.X, size.Y),
-            })
+        
+        tween(progFill, TweenInfo.new(2, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), { Size = UDim2.new(1, 0, 1, 0) })
+        
+        for i = 1, 4 do
+            tween(grad, smooth, { Rotation = grad.Rotation + 90 })
+            task.wait(0.5)
+        end
+        
+        task.delay(0.5, function()
+            tween(loadFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { BackgroundTransparency = 1 })
+            for _, child in ipairs(stage:GetDescendants()) do
+                if child:IsA("TextLabel") then
+                    tween(child, smooth, { TextTransparency = 1 })
+                elseif child:IsA("Frame") then
+                    tween(child, smooth, { BackgroundTransparency = 1 })
+                end
+            end
+    
+            task.delay(0.6, function()
+                loadFrame:Destroy()
+                
+                -- Slide in Navbar
+                navbar.Visible = true
+                navbar.Position = UDim2.new(0, 0, 0, -55)
+                tween(navbar, smooth, { Position = UDim2.new(0, 0, 0, 0) })
+                
+                -- Auto open the window
+                toggleWindow(true)
+            end)
         end)
     end)
 
