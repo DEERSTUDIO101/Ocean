@@ -43,9 +43,12 @@ Ocean.Theme = {
     Warning     = Color3.fromRGB(234, 179, 8),
     Danger      = Color3.fromRGB(239, 68,  68),
 
-    -- toggle
+    -- toggles & sliders
     ToggleOff   = Color3.fromRGB(30,  40,  70),
     ToggleOn    = Color3.fromRGB(58,  130, 246),
+    
+    -- shadows
+    Shadow      = Color3.fromRGB(0, 0, 0),
 }
 
 -- ─── Tween helper ─────────────────────────────────────
@@ -55,7 +58,7 @@ end
 
 local fast   = TweenInfo.new(0.18, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
 local smooth = TweenInfo.new(0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
-local slow   = TweenInfo.new(0.55, Enum.EasingStyle.Exponential,  Enum.EasingDirection.Out)
+local slow   = TweenInfo.new(0.55, Enum.EasingStyle.Expo,  Enum.EasingDirection.Out)
 
 -- ─── Instance factory ─────────────────────────────────
 local function make(cls, props, parent)
@@ -314,22 +317,45 @@ function Ocean:Window(config)
         Size             = UDim2.fromOffset(size.X, size.Y),
         Position         = UDim2.new(0.5, -size.X/2, 0.5, -size.Y/2),
         BorderSizePixel  = 0,
-        ClipsDescendants = true,
+        ClipsDescendants = false, -- False to allow drop shadow to show
     }, sg)
     corner(win, 12)
     stroke(win, T.Border, 1.2)
 
+    -- Drop Shadow
+    local shadow = make("ImageLabel", {
+        Name = "DropShadow",
+        BackgroundTransparency = 1,
+        Position = UDim2.new(0, -35, 0, -35),
+        Size = UDim2.new(1, 70, 1, 70),
+        ZIndex = -10,
+        Image = "rbxassetid://6015897843", -- Soft glow / shadow asset
+        ImageColor3 = Color3.new(0,0,0),
+        ImageTransparency = 0.35,
+        ScaleType = Enum.ScaleType.Slice,
+        SliceCenter = Rect.new(49, 49, 450, 450)
+    }, win)
+
     -- subtle inner gradient (top glow)
     local grad = make("UIGradient", {
         Color    = ColorSequence.new({
-            ColorSequenceKeypoint.new(0,   Color3.fromRGB(30, 50, 100)),
+            ColorSequenceKeypoint.new(0,   Color3.fromRGB(40, 70, 140)), -- Stronger glow
             ColorSequenceKeypoint.new(0.4, T.Surface),
             ColorSequenceKeypoint.new(1,   T.Surface),
         }),
         Rotation = 90,
     }, win)
 
-    -- ── Titlebar ───────────────────────────────────────
+    -- ── Content area ──────────────────────────────────
+    local contentArea = make("Frame", {
+        Name             = "Content",
+        BackgroundTransparency = 1,
+        Position         = UDim2.new(0, 140, 0, 50),
+        Size             = UDim2.new(1, -140, 1, -50),
+        ClipsDescendants = true,
+    }, win)
+
+    -- ── Window object ───────────────────────────────────────
     local titlebar = make("Frame", {
         Name             = "Titlebar",
         BackgroundColor3 = T.Surface2,
@@ -370,11 +396,11 @@ function Ocean:Window(config)
     make("TextLabel", {
         Text             = title,
         TextColor3       = T.TextPrimary,
-        Font             = Enum.Font.GothamBold,
-        TextSize         = 15,
+        Font             = Enum.Font.GothamMedium,
+        TextSize         = 16,
         BackgroundTransparency = 1,
-        Position         = UDim2.new(0, logoX, 0, 8),
-        Size             = UDim2.new(0.5, 0, 0, 18),
+        Position         = UDim2.new(0, logoX, 0, 7),
+        Size             = UDim2.new(0.5, 0, 0, 20),
         TextXAlignment   = Enum.TextXAlignment.Left,
     }, titlebar)
 
@@ -451,14 +477,30 @@ function Ocean:Window(config)
     -- drag
     self._drag(titlebar, win)
 
-    -- ── Tab bar (left sidebar) ─────────────────────────
+    -- Tab bar (left sidebar) ─────────────────────────
     local sidebar = make("Frame", {
         Name             = "Sidebar",
-        BackgroundColor3 = T.BG,
+        BackgroundColor3 = T.Surface, -- Changed from BG for contrast
         Position         = UDim2.new(0, 0, 0, 50),
-        Size             = UDim2.new(0, 130, 1, -50),
+        Size             = UDim2.new(0, 140, 1, -50), -- Made slightly wider
         BorderSizePixel  = 0,
     }, win)
+    
+    corner(sidebar, 12)
+    
+    -- bottom/right fill to kill corners correctly
+    make("Frame", {
+        BackgroundColor3 = T.Surface,
+        Position         = UDim2.new(1, -10, 0, 0),
+        Size             = UDim2.new(0, 10, 1, 0),
+        BorderSizePixel  = 0,
+    }, sidebar)
+    make("Frame", {
+        BackgroundColor3 = T.Surface,
+        Position         = UDim2.new(0, 0, 0, 0),
+        Size             = UDim2.new(1, 0, 0, 10),
+        BorderSizePixel  = 0,
+    }, sidebar)
 
     -- sidebar right border
     make("Frame", {
@@ -475,20 +517,51 @@ function Ocean:Window(config)
     }, sidebar)
     make("UIListLayout", {
         SortOrder = Enum.SortOrder.LayoutOrder,
-        Padding   = UDim.new(0, 4),
+        Padding   = UDim.new(0, 6),
     }, tabList)
-    padding(tabList, nil, 0, 0, 8, 8)
+    padding(tabList, nil, 0, 0, 12, 12)
 
-    -- ── Content area ──────────────────────────────────
-    local contentArea = make("Frame", {
-        Name             = "Content",
-        BackgroundTransparency = 1,
-        Position         = UDim2.new(0, 130, 0, 50),
-        Size             = UDim2.new(1, -130, 1, -50),
-        ClipsDescendants = true,
-    }, win)
+    -- ── Topbar Toggle Button ───────────────────────────
+    local topbarBtn = make("ImageButton", {
+        Name             = "TopbarToggle",
+        BackgroundColor3 = T.Surface,
+        Position         = UDim2.new(0, 160, 0, -4), -- Oben links, direkt neben dem Roblox Menü (160px offset)
+        Size             = UDim2.fromOffset(36, 36),
+        Image            = logo or "rbxassetid://10618549321",
+        ImageRectOffset  = Vector2.new(0,0),
+        ImageRectSize    = Vector2.new(0,0),
+        ScaleType        = Enum.ScaleType.Fit,
+        BorderSizePixel  = 0,
+        AutoButtonColor  = false,
+    }, sg)
+    corner(topbarBtn, 18) -- Rund
+    stroke(topbarBtn, T.Border, 1.2, 0.2)
+    padding(topbarBtn, 8)
+    
+    -- Drop shadow for the topbar button
+    make("UIStroke", {
+        Color = Color3.new(0,0,0),
+        Thickness = 2,
+        Transparency = 0.8
+    }, topbarBtn)
 
-    -- ── Window object ─────────────────────────────────
+    topbarBtn.MouseEnter:Connect(function() tween(topbarBtn, fast, { BackgroundColor3 = T.Surface3 }) end)
+    topbarBtn.MouseLeave:Connect(function() tween(topbarBtn, fast, { BackgroundColor3 = T.Surface }) end)
+
+    local isVisible = true
+    topbarBtn.MouseButton1Click:Connect(function()
+        isVisible = not isVisible
+        if isVisible then
+            win.Visible = true
+            tween(win, fast, { Size = UDim2.fromOffset(size.X, size.Y), BackgroundTransparency = 0 })
+        else
+            tween(win, fast, { Size = UDim2.fromOffset(size.X * 0.9, size.Y * 0.9), BackgroundTransparency = 1 })
+            task.delay(0.2, function() win.Visible = false end)
+        end
+    end)
+
+    -- Draggable Topbar Button
+    self._drag(topbarBtn, topbarBtn)
     local W = {
         _gui        = sg,
         _win        = win,
@@ -513,16 +586,17 @@ function Ocean:Window(config)
         local btn = make("TextButton", {
             Text             = (tabIcon and "  " or "") .. tabName,
             TextColor3       = T2.TextSub,
-            Font             = Enum.Font.Gotham,
-            TextSize         = 13,
+            Font             = Enum.Font.GothamMedium,
+            TextSize         = 14,
             BackgroundColor3 = T2.BG,
-            Size             = UDim2.new(1, 0, 0, 34),
+            Size             = UDim2.new(1, 0, 0, 36),
             BorderSizePixel  = 0,
             AutoButtonColor  = false,
             TextXAlignment   = Enum.TextXAlignment.Left,
+            BackgroundTransparency = 1,
         }, self._tabList)
-        corner(btn, 8)
-        padding(btn, nil, 0, 0, tabIcon and 30 or 10, 6)
+        corner(btn, 6)
+        padding(btn, nil, 0, 0, tabIcon and 34 or 14, 6)
 
         if tabIcon then
             make("ImageLabel", {
@@ -536,12 +610,12 @@ function Ocean:Window(config)
         -- active indicator bar
         local indicator = make("Frame", {
             BackgroundColor3 = T2.Accent,
-            Position         = UDim2.new(0, 0, 0.15, 0),
-            Size             = UDim2.new(0, 3, 0.7, 0),
+            Position         = UDim2.new(0, 2, 0.5, -9),
+            Size             = UDim2.new(0, 3, 0, 18),
             BorderSizePixel  = 0,
             Visible          = false,
         }, btn)
-        corner(indicator, 3)
+        corner(indicator, 2)
 
         -- tab content page
         local page = make("ScrollingFrame", {
@@ -698,7 +772,7 @@ function Ocean:Button(tab, config)
     local callback = config.Callback or function() end
     local T = self.Theme
 
-    local h = desc and 52 or 36
+    local h = desc and 52 or 40 -- Increased height slightly for a more premium feel
 
     local card = make("Frame", {
         BackgroundColor3 = T.Surface2,
@@ -706,7 +780,21 @@ function Ocean:Button(tab, config)
         BorderSizePixel  = 0,
     }, tab._page)
     corner(card, 8)
-    stroke(card, T.Border, 1)
+    local cardStroke = stroke(card, T.Border, 1)
+
+    -- Drop Shadow for Button
+    make("ImageLabel", {
+        Name = "DropShadow",
+        BackgroundTransparency = 1,
+        Position = UDim2.new(0, -10, 0, -10),
+        Size = UDim2.new(1, 20, 1, 20),
+        ZIndex = -1,
+        Image = "rbxassetid://6015897843",
+        ImageColor3 = Color3.new(0,0,0),
+        ImageTransparency = 0.6,
+        ScaleType = Enum.ScaleType.Slice,
+        SliceCenter = Rect.new(49, 49, 450, 450)
+    }, card)
 
     -- click zone (invisible button over whole card)
     local btn = make("TextButton", {
@@ -727,11 +815,11 @@ function Ocean:Button(tab, config)
     make("TextLabel", {
         Text           = text,
         TextColor3     = T.TextPrimary,
-        Font           = Enum.Font.GothamBold,
-        TextSize       = 13,
+        Font           = Enum.Font.GothamMedium,
+        TextSize       = 14,
         BackgroundTransparency = 1,
-        Position       = UDim2.new(0, 14, 0, desc and 8 or 0),
-        Size           = UDim2.new(1, -80, 0, 18),
+        Position       = UDim2.new(0, 16, 0, desc and 8 or 0),
+        Size           = UDim2.new(1, -80, 0, desc and 18 or h),
         TextXAlignment = Enum.TextXAlignment.Left,
     }, card)
 
@@ -740,9 +828,9 @@ function Ocean:Button(tab, config)
             Text           = desc,
             TextColor3     = T.TextDim,
             Font           = Enum.Font.Gotham,
-            TextSize       = 11,
+            TextSize       = 12,
             BackgroundTransparency = 1,
-            Position       = UDim2.new(0, 14, 0, 28),
+            Position       = UDim2.new(0, 16, 0, 26),
             Size           = UDim2.new(1, -30, 0, 16),
             TextXAlignment = Enum.TextXAlignment.Left,
             TextWrapped    = true,
@@ -750,7 +838,7 @@ function Ocean:Button(tab, config)
     end
 
     -- arrow icon
-    make("TextLabel", {
+    local arrow = make("TextLabel", {
         Text           = "›",
         TextColor3     = T.TextDim,
         Font           = Enum.Font.GothamBold,
@@ -765,10 +853,14 @@ function Ocean:Button(tab, config)
     btn.MouseEnter:Connect(function()
         tween(card, fast, { BackgroundColor3 = T.Surface3 })
         tween(strip, fast, { BackgroundColor3 = T.AccentHover })
+        tween(cardStroke, fast, { Color = T.BorderHover, Transparency = 0.5 })
+        tween(arrow, fast, { Position = UDim2.new(1, -20, 0.5, -10), TextColor3 = T.TextPrimary })
     end)
     btn.MouseLeave:Connect(function()
         tween(card, fast, { BackgroundColor3 = T.Surface2 })
         tween(strip, fast, { BackgroundColor3 = T.Accent })
+        tween(cardStroke, fast, { Color = T.Border, Transparency = 0 })
+        tween(arrow, fast, { Position = UDim2.new(1, -24, 0.5, -10), TextColor3 = T.TextDim })
     end)
     btn.MouseButton1Down:Connect(function()
         tween(card, fast, { BackgroundColor3 = T.AccentDark })
@@ -797,7 +889,7 @@ function Ocean:Toggle(tab, config)
     local state = default
     if flag then self.Flags[flag] = state end
 
-    local h = desc and 52 or 36
+    local h = desc and 52 or 40
 
     local card = make("Frame", {
         BackgroundColor3 = T.Surface2,
@@ -805,16 +897,30 @@ function Ocean:Toggle(tab, config)
         BorderSizePixel  = 0,
     }, tab._page)
     corner(card, 8)
-    stroke(card, T.Border, 1)
+    local cardStroke = stroke(card, T.Border, 1)
+
+    -- Drop Shadow
+    make("ImageLabel", {
+        Name = "DropShadow",
+        BackgroundTransparency = 1,
+        Position = UDim2.new(0, -10, 0, -10),
+        Size = UDim2.new(1, 20, 1, 20),
+        ZIndex = -1,
+        Image = "rbxassetid://6015897843",
+        ImageColor3 = Color3.new(0,0,0),
+        ImageTransparency = 0.6,
+        ScaleType = Enum.ScaleType.Slice,
+        SliceCenter = Rect.new(49, 49, 450, 450)
+    }, card)
 
     make("TextLabel", {
         Text           = text,
         TextColor3     = T.TextPrimary,
-        Font           = Enum.Font.GothamBold,
-        TextSize       = 13,
+        Font           = Enum.Font.GothamMedium,
+        TextSize       = 14,
         BackgroundTransparency = 1,
-        Position       = UDim2.new(0, 14, 0, desc and 8 or 0),
-        Size           = UDim2.new(1, -80, 0, 18),
+        Position       = UDim2.new(0, 16, 0, desc and 8 or 0),
+        Size           = UDim2.new(1, -80, 0, desc and 18 or h),
         TextXAlignment = Enum.TextXAlignment.Left,
     }, card)
 
@@ -823,9 +929,9 @@ function Ocean:Toggle(tab, config)
             Text           = desc,
             TextColor3     = T.TextDim,
             Font           = Enum.Font.Gotham,
-            TextSize       = 11,
+            TextSize       = 12,
             BackgroundTransparency = 1,
-            Position       = UDim2.new(0, 14, 0, 28),
+            Position       = UDim2.new(0, 16, 0, 26),
             Size           = UDim2.new(1, -80, 0, 16),
             TextXAlignment = Enum.TextXAlignment.Left,
         }, card)
@@ -844,11 +950,18 @@ function Ocean:Toggle(tab, config)
     -- toggle knob
     local knob = make("Frame", {
         BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-        Position         = state and UDim2.new(0, 20, 0.5, -7) or UDim2.new(0, 2, 0.5, -7),
+        Position         = state and UDim2.new(0, 20, 0.5, -7) or UDim2.new(0, 4, 0.5, -7),
         Size             = UDim2.fromOffset(14, 14),
         BorderSizePixel  = 0,
     }, track)
     corner(knob, 7)
+    
+    -- Knob shadow
+    make("UIStroke", {
+        Color = Color3.new(0,0,0),
+        Thickness = 1,
+        Transparency = 0.7,
+    }, knob)
 
     -- invisible hit button
     local btn = make("TextButton", {
@@ -857,6 +970,22 @@ function Ocean:Toggle(tab, config)
         Size             = UDim2.new(1, 0, 1, 0),
         ZIndex           = 5,
     }, card)
+    
+    -- hover / press
+    btn.MouseEnter:Connect(function()
+        tween(card, fast, { BackgroundColor3 = T.Surface3 })
+        tween(cardStroke, fast, { Color = T.BorderHover, Transparency = 0.5 })
+    end)
+    btn.MouseLeave:Connect(function()
+        tween(card, fast, { BackgroundColor3 = T.Surface2 })
+        tween(cardStroke, fast, { Color = T.Border, Transparency = 0 })
+    end)
+    btn.MouseButton1Down:Connect(function()
+        tween(card, fast, { BackgroundColor3 = T.AccentDark })
+    end)
+    btn.MouseButton1Up:Connect(function()
+        tween(card, fast, { BackgroundColor3 = T.Surface3 })
+    end)
 
     local function setState(v, fire)
         state = v
@@ -869,8 +998,6 @@ function Ocean:Toggle(tab, config)
         end
     end
 
-    btn.MouseEnter:Connect(function() tween(card, fast, { BackgroundColor3 = T.Surface3 }) end)
-    btn.MouseLeave:Connect(function() tween(card, fast, { BackgroundColor3 = T.Surface2 }) end)
     btn.MouseButton1Click:Connect(function() setState(not state) end)
 
     return {
@@ -903,14 +1030,28 @@ function Ocean:Slider(tab, config)
         BorderSizePixel  = 0,
     }, tab._page)
     corner(card, 8)
-    stroke(card, T.Border, 1)
+    local cardStroke = stroke(card, T.Border, 1)
+
+    -- Drop Shadow
+    make("ImageLabel", {
+        Name = "DropShadow",
+        BackgroundTransparency = 1,
+        Position = UDim2.new(0, -10, 0, -10),
+        Size = UDim2.new(1, 20, 1, 20),
+        ZIndex = -1,
+        Image = "rbxassetid://6015897843",
+        ImageColor3 = Color3.new(0,0,0),
+        ImageTransparency = 0.6,
+        ScaleType = Enum.ScaleType.Slice,
+        SliceCenter = Rect.new(49, 49, 450, 450)
+    }, card)
 
     -- label row
     make("TextLabel", {
         Text           = text,
         TextColor3     = T.TextPrimary,
-        Font           = Enum.Font.GothamBold,
-        TextSize       = 13,
+        Font           = Enum.Font.GothamMedium,
+        TextSize       = 14,
         BackgroundTransparency = 1,
         Position       = UDim2.new(0, 14, 0, desc and 8 or 6),
         Size           = UDim2.new(1, -80, 0, 16),
@@ -1015,8 +1156,14 @@ function Ocean:Slider(tab, config)
     end)
 
     -- hover
-    card.MouseEnter:Connect(function() tween(card, fast, { BackgroundColor3 = T.Surface3 }) end)
-    card.MouseLeave:Connect(function() tween(card, fast, { BackgroundColor3 = T.Surface2 }) end)
+    card.MouseEnter:Connect(function() 
+        tween(card, fast, { BackgroundColor3 = T.Surface3 })
+        tween(cardStroke, fast, { Color = T.BorderHover, Transparency = 0.5 })
+    end)
+    card.MouseLeave:Connect(function() 
+        tween(card, fast, { BackgroundColor3 = T.Surface2 })
+        tween(cardStroke, fast, { Color = T.Border, Transparency = 0 })
+    end)
 
     return {
         Set = function(_, v) updateValue(v, false) end,
@@ -1039,19 +1186,33 @@ function Ocean:Dropdown(tab, config)
 
     local card = make("Frame", {
         BackgroundColor3 = T.Surface2,
-        Size             = UDim2.new(1, 0, 0, 36),
+        Size             = UDim2.new(1, 0, 0, 40),
         BorderSizePixel  = 0,
         ZIndex           = 10,
         ClipsDescendants = false,
     }, tab._page)
     corner(card, 8)
-    stroke(card, T.Border, 1)
+    local cardStroke = stroke(card, T.Border, 1)
+
+    -- Drop Shadow
+    make("ImageLabel", {
+        Name = "DropShadow",
+        BackgroundTransparency = 1,
+        Position = UDim2.new(0, -10, 0, -10),
+        Size = UDim2.new(1, 20, 1, 20),
+        ZIndex = -1,
+        Image = "rbxassetid://6015897843",
+        ImageColor3 = Color3.new(0,0,0),
+        ImageTransparency = 0.6,
+        ScaleType = Enum.ScaleType.Slice,
+        SliceCenter = Rect.new(49, 49, 450, 450)
+    }, card)
 
     make("TextLabel", {
         Text           = text,
         TextColor3     = T.TextPrimary,
-        Font           = Enum.Font.GothamBold,
-        TextSize       = 13,
+        Font           = Enum.Font.GothamMedium,
+        TextSize       = 14,
         BackgroundTransparency = 1,
         Position       = UDim2.new(0, 14, 0, 0),
         Size           = UDim2.new(0.5, 0, 1, 0),
@@ -1147,8 +1308,16 @@ function Ocean:Dropdown(tab, config)
     end
     buildList()
 
-    btn.MouseEnter:Connect(function() tween(card, fast, { BackgroundColor3 = T.Surface3 }) end)
-    btn.MouseLeave:Connect(function() if not isOpen then tween(card, fast, { BackgroundColor3 = T.Surface2 }) end end)
+    btn.MouseEnter:Connect(function() 
+        tween(card, fast, { BackgroundColor3 = T.Surface3 }) 
+        tween(cardStroke, fast, { Color = T.BorderHover, Transparency = 0.5 })
+    end)
+    btn.MouseLeave:Connect(function() 
+        if not isOpen then 
+            tween(card, fast, { BackgroundColor3 = T.Surface2 }) 
+            tween(cardStroke, fast, { Color = T.Border, Transparency = 0 })
+        end 
+    end)
     btn.MouseButton1Click:Connect(function()
         isOpen = not isOpen
         if isOpen then
@@ -1194,13 +1363,27 @@ function Ocean:TextInput(tab, config)
         BorderSizePixel  = 0,
     }, tab._page)
     corner(card, 8)
-    stroke(card, T.Border, 1)
+    local cardStroke = stroke(card, T.Border, 1)
+
+    -- Drop Shadow
+    make("ImageLabel", {
+        Name = "DropShadow",
+        BackgroundTransparency = 1,
+        Position = UDim2.new(0, -10, 0, -10),
+        Size = UDim2.new(1, 20, 1, 20),
+        ZIndex = -1,
+        Image = "rbxassetid://6015897843",
+        ImageColor3 = Color3.new(0,0,0),
+        ImageTransparency = 0.6,
+        ScaleType = Enum.ScaleType.Slice,
+        SliceCenter = Rect.new(49, 49, 450, 450)
+    }, card)
 
     make("TextLabel", {
         Text           = text,
         TextColor3     = T.TextPrimary,
-        Font           = Enum.Font.GothamBold,
-        TextSize       = 13,
+        Font           = Enum.Font.GothamMedium,
+        TextSize       = 14,
         BackgroundTransparency = 1,
         Position       = UDim2.new(0, 14, 0, 6),
         Size           = UDim2.new(1, -20, 0, 16),
@@ -1233,14 +1416,30 @@ function Ocean:TextInput(tab, config)
     inputBox.Focused:Connect(function()
         tween(inputBG, fast, { BackgroundColor3 = T.Surface3 })
         tween(inputStroke, fast, { Color = T.Accent })
+        tween(cardStroke, fast, { Color = T.BorderHover, Transparency = 0.5 })
     end)
     inputBox.FocusLost:Connect(function(enter)
         tween(inputBG, fast, { BackgroundColor3 = T.BG })
         tween(inputStroke, fast, { Color = T.Border })
+        tween(cardStroke, fast, { Color = T.Border, Transparency = 0 })
         if flag then self.Flags[flag] = inputBox.Text end
         if enter then
             local ok, err = pcall(callback, inputBox.Text)
             if not ok then warn("[Ocean:TextInput] " .. tostring(err)) end
+        end
+    end)
+    
+    -- Card hover
+    card.MouseEnter:Connect(function() 
+        tween(card, fast, { BackgroundColor3 = T.Surface3 }) 
+        if not inputBox:IsFocused() then
+            tween(cardStroke, fast, { Color = T.BorderHover, Transparency = 0.5 })
+        end
+    end)
+    card.MouseLeave:Connect(function() 
+        tween(card, fast, { BackgroundColor3 = T.Surface2 }) 
+        if not inputBox:IsFocused() then
+            tween(cardStroke, fast, { Color = T.Border, Transparency = 0 })
         end
     end)
 
@@ -1265,17 +1464,31 @@ function Ocean:Keybind(tab, config)
 
     local card = make("Frame", {
         BackgroundColor3 = T.Surface2,
-        Size             = UDim2.new(1, 0, 0, 36),
+        Size             = UDim2.new(1, 0, 0, 40),
         BorderSizePixel  = 0,
     }, tab._page)
     corner(card, 8)
-    stroke(card, T.Border, 1)
+    local cardStroke = stroke(card, T.Border, 1)
+
+    -- Drop Shadow
+    make("ImageLabel", {
+        Name = "DropShadow",
+        BackgroundTransparency = 1,
+        Position = UDim2.new(0, -10, 0, -10),
+        Size = UDim2.new(1, 20, 1, 20),
+        ZIndex = -1,
+        Image = "rbxassetid://6015897843",
+        ImageColor3 = Color3.new(0,0,0),
+        ImageTransparency = 0.6,
+        ScaleType = Enum.ScaleType.Slice,
+        SliceCenter = Rect.new(49, 49, 450, 450)
+    }, card)
 
     make("TextLabel", {
         Text           = text,
         TextColor3     = T.TextPrimary,
-        Font           = Enum.Font.GothamBold,
-        TextSize       = 13,
+        Font           = Enum.Font.GothamMedium,
+        TextSize       = 14,
         BackgroundTransparency = 1,
         Position       = UDim2.new(0, 14, 0, 0),
         Size           = UDim2.new(0.6, 0, 1, 0),
@@ -1324,8 +1537,18 @@ function Ocean:Keybind(tab, config)
         tween(keyBtn, fast, { BackgroundColor3 = T.Surface3, TextColor3 = T.Accent })
     end)
 
-    card.MouseEnter:Connect(function() tween(card, fast, { BackgroundColor3 = T.Surface3 }) end)
-    card.MouseLeave:Connect(function() tween(card, fast, { BackgroundColor3 = T.Surface2 }) end)
+    card.MouseEnter:Connect(function() 
+        tween(card, fast, { BackgroundColor3 = T.Surface3 })
+        if not listening then
+            tween(cardStroke, fast, { Color = T.BorderHover, Transparency = 0.5 })
+        end
+    end)
+    card.MouseLeave:Connect(function() 
+        tween(card, fast, { BackgroundColor3 = T.Surface2 })
+        if not listening then
+            tween(cardStroke, fast, { Color = T.Border, Transparency = 0 })
+        end
+    end)
 
     return {
         Get = function(_) return currentKey end,
