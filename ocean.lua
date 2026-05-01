@@ -18,10 +18,24 @@ end
 
 -- ─── Icons ──────────────────────────────────────────────
 Ocean.Icons = {
-    Search   = "rbxassetid://7733658504",
-    Settings = "rbxassetid://7734053495",
-    Close    = "rbxassetid://7733715400",
+    -- Fallbacks in case HTTP fails
+    ["search"]   = "rbxassetid://7734052925",
+    ["settings"] = "rbxassetid://7734053495",
+    ["x"]        = "rbxassetid://7743878857",
 }
+
+task.spawn(function()
+    pcall(function()
+        local HttpService = game:GetService("HttpService")
+        local req = game:HttpGet("https://raw.githubusercontent.com/DEERSTUDIO101/Ocean/refs/heads/main/icons.json")
+        local decoded = HttpService:JSONDecode(req)
+        if decoded then
+            for k, v in pairs(decoded) do
+                Ocean.Icons[k] = v
+            end
+        end
+    end)
+end)
 
 -- ─── Theme ────────────────────────────────────────────
 Ocean.Theme = {
@@ -462,7 +476,7 @@ function Ocean:Window(config)
     corner(exploreBtn, 8)
     make("ImageLabel", {
         BackgroundTransparency = 1,
-        Image = Ocean.Icons.Search,
+        Image = Ocean.Icons["search"],
         ImageColor3 = T.TextDim,
         Size = UDim2.fromOffset(16, 16),
         Position = UDim2.new(0.5, -8, 0.5, -8),
@@ -479,7 +493,7 @@ function Ocean:Window(config)
     corner(settingsBtn, 8)
     make("ImageLabel", {
         BackgroundTransparency = 1,
-        Image = Ocean.Icons.Settings,
+        Image = Ocean.Icons["settings"],
         ImageColor3 = T.TextDim,
         Size = UDim2.fromOffset(16, 16),
         Position = UDim2.new(0.5, -8, 0.5, -8),
@@ -496,7 +510,7 @@ function Ocean:Window(config)
     corner(closeBtn, 8)
     make("ImageLabel", {
         BackgroundTransparency = 1,
-        Image = Ocean.Icons.Close,
+        Image = Ocean.Icons["x"],
         ImageColor3 = T.TextDim,
         Size = UDim2.fromOffset(16, 16),
         Position = UDim2.new(0.5, -8, 0.5, -8),
@@ -668,7 +682,7 @@ function Ocean:Window(config)
         BackgroundTransparency = 1,
         Position = UDim2.new(0, 12, 0.5, -8),
         Size = UDim2.fromOffset(16, 16),
-        Image = Ocean.Icons.Search,
+        Image = Ocean.Icons["search"],
         ImageColor3 = T.TextDim,
     }, searchContainer)
 
