@@ -58,7 +58,7 @@ end
 
 local fast   = TweenInfo.new(0.18, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
 local smooth = TweenInfo.new(0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
-local slow   = TweenInfo.new(0.55, Enum.EasingStyle.Expo,  Enum.EasingDirection.Out)
+local slow   = TweenInfo.new(0.55, Enum.EasingStyle.Exponential,  Enum.EasingDirection.Out)
 
 -- ─── Instance factory ─────────────────────────────────
 local function make(cls, props, parent)
@@ -691,13 +691,155 @@ function Ocean:Window(config)
         })
     end
 
-    -- open animation
-    win.BackgroundTransparency = 1
-    win.Size = UDim2.fromOffset(size.X * 0.92, size.Y * 0.92)
-    tween(win, smooth, {
-        BackgroundTransparency = 0,
-        Size = UDim2.fromOffset(size.X, size.Y),
-    })
+    -- ─── Ocean Loading Animation ─────────────────────────
+    win.Visible = false
+
+    local loadFrame = make("Frame", {
+        Name = "LoadingOverlay",
+        BackgroundColor3 = Color3.fromRGB(0, 0, 0),
+        Size = UDim2.new(1, 0, 1, 0),
+        ZIndex = 1000,
+        BorderSizePixel = 0,
+    }, sg)
+
+    local stage = make("Frame", {
+        BackgroundTransparency = 1,
+        AnchorPoint = Vector2.new(0.5, 0.5),
+        Position = UDim2.new(0.5, 0, 0.5, -20),
+        Size = UDim2.new(0, 460, 0, 180),
+        ZIndex = 1001,
+    }, loadFrame)
+
+    local chars = { "}", "<", "(", "(", "(", "*", ">" }
+    local xOffsets = { 0, 68, 130, 190, 250, 315, 352 }
+    local yOffsets = { 128, 122, 122, 122, 122, 84, 122 }
+    local sizes = { 116, 108, 108, 108, 108, 62, 108 }
+
+    for i, ch in ipairs(chars) do
+        local lbl = make("TextLabel", {
+            Text = ch,
+            Font = Enum.Font.Code,
+            TextSize = sizes[i],
+            TextColor3 = Color3.fromRGB(178, 178, 178),
+            BackgroundTransparency = 1,
+            Position = UDim2.new(0, xOffsets[i], 0, yOffsets[i] - sizes[i] + 16),
+            Size = UDim2.fromOffset(sizes[i], sizes[i]),
+            TextTransparency = 1,
+            ZIndex = 1002,
+        }, stage)
+
+        local delay = 0.05 + ((i-1) * 0.17)
+        task.delay(delay, function()
+            tween(lbl, TweenInfo.new(0.35, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {
+                TextTransparency = 0,
+                Position = UDim2.new(0, xOffsets[i], 0, yOffsets[i] - sizes[i])
+            })
+        end)
+    end
+
+    -- Shimmer Effect
+    local shimmer = make("Frame", {
+        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+        BackgroundTransparency = 0.82,
+        BorderSizePixel = 0,
+        Size = UDim2.new(0, 60, 1, 0),
+        Position = UDim2.new(0, -100, 0, 0),
+        ZIndex = 1003,
+        Rotation = 15,
+    }, stage)
+    
+    local shimmerGrad = make("UIGradient", {
+        Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Color3.new(1,1,1)),
+            ColorSequenceKeypoint.new(0.5, Color3.new(1,1,1)),
+            ColorSequenceKeypoint.new(1, Color3.new(1,1,1))
+        }),
+        Transparency = NumberSequence.new({
+            NumberSequenceKeypoint.new(0, 1),
+            NumberSequenceKeypoint.new(0.4, 1),
+            NumberSequenceKeypoint.new(0.5, 0),
+            NumberSequenceKeypoint.new(0.6, 1),
+            NumberSequenceKeypoint.new(1, 1),
+        })
+    }, shimmer)
+
+    task.delay(1.2, function()
+        tween(shimmer, TweenInfo.new(0.9, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), {
+            Position = UDim2.new(1, 100, 0, 0)
+        })
+    end)
+
+    -- Subtitle
+    local subtitle = make("TextLabel", {
+        Text = "O C E A N   D E V E L O P M E N T",
+        Font = Enum.Font.Gotham,
+        TextSize = 13,
+        TextColor3 = Color3.fromRGB(176, 176, 176),
+        BackgroundTransparency = 1,
+        Position = UDim2.new(0.5, 0, 1, 20),
+        Size = UDim2.new(0, 300, 0, 20),
+        AnchorPoint = Vector2.new(0.5, 0),
+        TextTransparency = 1,
+        ZIndex = 1002,
+    }, stage)
+
+    task.delay(1.6, function()
+        tween(subtitle, TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+            TextTransparency = 0,
+            Position = UDim2.new(0.5, 0, 1, 16)
+        })
+    end)
+
+    -- Loading Bar
+    local barWrap = make("Frame", {
+        BackgroundColor3 = Color3.fromRGB(17, 17, 17),
+        Position = UDim2.new(0.5, -90, 1, 50),
+        Size = UDim2.new(0, 180, 0, 1),
+        BorderSizePixel = 0,
+        BackgroundTransparency = 1,
+        ZIndex = 1002,
+        ClipsDescendants = true,
+    }, stage)
+
+    local barFill = make("Frame", {
+        BackgroundColor3 = Color3.fromRGB(170, 170, 170),
+        Size = UDim2.new(0, 0, 1, 0),
+        BorderSizePixel = 0,
+        ZIndex = 1003,
+    }, barWrap)
+
+    task.delay(1.8, function()
+        tween(barWrap, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { BackgroundTransparency = 0 })
+    end)
+
+    task.delay(1.9, function()
+        tween(barFill, TweenInfo.new(2.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+            Size = UDim2.new(1, 0, 1, 0)
+        })
+    end)
+
+    -- Transition to Main UI
+    task.delay(4.2, function()
+        tween(loadFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { BackgroundTransparency = 1 })
+        for _, desc in ipairs(stage:GetDescendants()) do
+            if desc:IsA("TextLabel") then
+                tween(desc, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { TextTransparency = 1 })
+            elseif desc:IsA("Frame") then
+                tween(desc, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { BackgroundTransparency = 1 })
+            end
+        end
+
+        task.delay(0.6, function()
+            loadFrame:Destroy()
+            win.Visible = true
+            win.BackgroundTransparency = 1
+            win.Size = UDim2.fromOffset(size.X * 0.92, size.Y * 0.92)
+            tween(win, smooth, {
+                BackgroundTransparency = 0,
+                Size = UDim2.fromOffset(size.X, size.Y),
+            })
+        end)
+    end)
 
     return W
 end
