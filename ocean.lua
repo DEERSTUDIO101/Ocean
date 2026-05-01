@@ -55,7 +55,7 @@ end
 
 local fast   = TweenInfo.new(0.18, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
 local smooth = TweenInfo.new(0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
-local slow   = TweenInfo.new(0.55, Enum.EasingStyle.Expo,  Enum.EasingDirection.Out)
+local slow   = TweenInfo.new(0.55, Enum.EasingStyle.Exponential,  Enum.EasingDirection.Out)
 
 -- ─── Instance factory ─────────────────────────────────
 local function make(cls, props, parent)
