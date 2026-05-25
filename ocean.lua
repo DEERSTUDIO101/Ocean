@@ -1576,6 +1576,14 @@ function OceanUI:CreateWindow(config)
 		end
 	end
 
+	-- Privacy mode state (shared across profile UI)
+	local _privacyActive   = false
+	local _privacyRealName = player.DisplayName
+	local _privacyRealThumb = ""
+	local _privacyCeoThumb  = ""
+	local _privacyNameLbl   = nil
+	local _privacyAvatarImg = nil
+
 	if true then -- always create sidebar (desktop + mobile)
 		sidebar = frame(body,{
 			name="Sidebar", color=K.bg, trans=1,
@@ -1634,9 +1642,10 @@ function OceanUI:CreateWindow(config)
 			ScaleType=Enum.ScaleType.Crop,
 		}, avatarHolder)
 		rnd(avatarImg,99)
+		_privacyAvatarImg = avatarImg
 
 		local txtX = AVA + 16
-		lbl(profileSection,{
+		_privacyNameLbl = lbl(profileSection,{
 			text=player.DisplayName,
 			font=Enum.Font.GothamBold, size=15, color=K.text,
 			sz=UDim2.new(1,-txtX-4,0,18),
@@ -1651,7 +1660,7 @@ function OceanUI:CreateWindow(config)
 		})
 
 		task.spawn(function()
-			-- Avatar thumbnail
+			-- Avatar thumbnail (real player)
 			local ok, thumb = pcall(function()
 				return Players:GetUserThumbnailAsync(
 					player.UserId,
@@ -1659,7 +1668,27 @@ function OceanUI:CreateWindow(config)
 					Enum.ThumbnailSize.Size100x100
 				)
 			end)
-			if ok and thumb then avatarImg.Image = thumb end
+			if ok and thumb then
+				_privacyRealThumb = thumb
+				if not _privacyActive then
+					avatarImg.Image = thumb
+				end
+			end
+
+			-- Roblox CEO (David Baszucki) headshot for privacy mode
+			local okCeo, ceoThumb = pcall(function()
+				return Players:GetUserThumbnailAsync(
+					1,
+					Enum.ThumbnailType.AvatarBust,
+					Enum.ThumbnailSize.Size100x100
+				)
+			end)
+			if okCeo and ceoThumb then
+				_privacyCeoThumb = ceoThumb
+				if _privacyActive then
+					avatarImg.Image = ceoThumb
+				end
+			end
 
 			-- Executor name (safe cross-executor detection)
 			local execName = "Unknown"
@@ -2232,6 +2261,41 @@ function OceanUI:CreateWindow(config)
 		return Tab
 	end
 
+	--- Set privacy mode on/off.
+	-- When active: player name → "Player-123", avatar → Roblox CEO headshot.
+	function Window:SetPrivacy(state)
+		_privacyActive = state == true
+		if _privacyNameLbl then
+			_privacyNameLbl.Text = _privacyActive and "Player-123" or _privacyRealName
+		end
+		if _privacyAvatarImg then
+			if _privacyActive then
+				-- Use CEO thumb if already loaded, else placeholder
+				_privacyAvatarImg.Image = (_privacyCeoThumb ~= "") and _privacyCeoThumb or "rbxassetid://0"
+			else
+				_privacyAvatarImg.Image = _privacyRealThumb
+			end
+		end
+	end
+
+	--- Convenience: adds a pre-built Privacy toggle row to any Tab.
+	-- Usage: Window:AddPrivacyToggle(mySettingsTab)
+	--        Window:AddPrivacyToggle(mySettingsTab, { Default = false })
+	function Window:AddPrivacyToggle(tab, opts)
+		opts = opts or {}
+		local toggleOpts = {
+			Title    = opts.Title    or "Privacy Mode",
+			Subtitle = opts.Subtitle or "Hides your name & avatar",
+			Icon     = opts.Icon     or "eye-off",
+			Default  = opts.Default  or false,
+			Callback = function(state)
+				self:SetPrivacy(state)
+				if opts.Callback then pcall(opts.Callback, state) end
+			end,
+		}
+		return tab:AddToggle(toggleOpts)
+	end
+
 	-- NOTIFICATION SYSTEM
 	local notifContainer = frame(sg,{
 		name="NotifContainer", color=K.bg, trans=1,
@@ -2416,6 +2480,25 @@ function OceanUI:CreateWindow(config)
 		end
 		return Config
 	end
+
+	-- ══════════════════════════════════════════════
+	--          BUILT-IN SETTINGS TAB
+	-- ══════════════════════════════════════════════
+	-- Always created last so it appears at the bottom of the sidebar.
+	do
+		local _settingsTab = Window:AddTab("Settings", "settings")
+
+		_settingsTab:AddToggle({
+			Title    = "Privacy Mode",
+			Subtitle = "Hides your name & avatar",
+			Icon     = "eye-off",
+			Default  = false,
+			Callback = function(state)
+				Window:SetPrivacy(state)
+			end,
+		})
+	end
+	-- ══════════════════════════════════════════════
 
 	return Window
 end
