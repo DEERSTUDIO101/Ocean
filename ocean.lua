@@ -2481,25 +2481,6 @@ function OceanUI:CreateWindow(config)
 		return Config
 	end
 
-	-- ══════════════════════════════════════════════
-	--          BUILT-IN SETTINGS TAB
-	-- ══════════════════════════════════════════════
-	-- Always created last so it appears at the bottom of the sidebar.
-	do
-		local _settingsTab = Window:AddTab("Settings", "settings")
-
-		_settingsTab:AddToggle({
-			Title    = "Privacy Mode",
-			Subtitle = "Hides your name & avatar",
-			Icon     = "eye-off",
-			Default  = false,
-			Callback = function(state)
-				Window:SetPrivacy(state)
-			end,
-		})
-	end
-	-- ══════════════════════════════════════════════
-
 	return Window
 end
 
