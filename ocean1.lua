@@ -2841,20 +2841,36 @@ function OceanUI:CreateWindow(config)
 	local _bgImageLabel = nil
 
 	function Window:SetBackground(url, opacity)
-		-- Remove existing bg
 		if _bgImageLabel and _bgImageLabel.Parent then
 			_bgImageLabel:Destroy()
 			_bgImageLabel = nil
 		end
-		if not url or url == "" then return end
+
+		local hasBg = url and url ~= ""
+
+		-- Sidebar und ContentArea transparent/opak je nach ob Hintergrundbild aktiv
+		local sidebar = body:FindFirstChild("Sidebar")
+		local ca      = body:FindFirstChild("ContentArea")
+		if sidebar then sidebar.BackgroundTransparency = hasBg and 1 or 0 end
+		if ca      then ca.BackgroundTransparency      = hasBg and 1 or 0 end
+		-- Tab-Frames auch
+		if ca then
+			for _, tab in ipairs(ca:GetChildren()) do
+				if tab.Name:sub(1,4) == "Tab_" and tab:IsA("Frame") then
+					tab.BackgroundTransparency = hasBg and 1 or 0
+				end
+			end
+		end
+
+		if not hasBg then return end
 
 		local bgImg = inst("ImageLabel",{
 			Name="WinBackground", BackgroundTransparency=1,
 			Image=url,
 			Size=UDim2.fromScale(1,1), Position=UDim2.fromScale(0,0),
-			ZIndex=3, ScaleType=Enum.ScaleType.Crop,
+			ZIndex=4, ScaleType=Enum.ScaleType.Crop,
 			ImageTransparency=opacity or 0.35,
-		}, win)
+		}, body)
 		rnd(bgImg, 10)
 		_bgImageLabel = bgImg
 	end
