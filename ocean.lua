@@ -2351,7 +2351,81 @@ function OceanUI:CreateWindow(config)
 			local IMG_H     = opts.Height or DEFAULT_H
 			local MIN_H, MAX_H = 60, 400
 
-			-- outer container (auto-resizes)
+			-- resolve executor HTTP + local asset functions (same approach as Syde)
+			local function getRequestFn()
+				local syn = rawget(_G,"syn") or (type(getgenv)=="function" and getgenv() and getgenv().syn)
+				if syn and syn.request then return syn.request end
+				local fns = {"request","http_request","httprequest"}
+				for _,n in ipairs(fns) do
+					local f = rawget(_G,n) or (type(getgenv)=="function" and getgenv() and getgenv()[n])
+					if type(f)=="function" then return f end
+				end
+				local h = rawget(_G,"http") or (type(getgenv)=="function" and getgenv() and getgenv().http)
+				if h and h.request then return h.request end
+				return nil
+			end
+
+			local function getAssetFn()
+				local fns = {"getcustomasset","getsynasset"}
+				for _,n in ipairs(fns) do
+					local f = rawget(_G,n) or (type(getgenv)=="function" and getgenv() and getgenv()[n])
+					if type(f)=="function" then return f end
+				end
+				return nil
+			end
+
+			local function getWritefileFn()
+				local f = rawget(_G,"writefile") or (type(getgenv)=="function" and getgenv() and getgenv().writefile)
+				return type(f)=="function" and f or nil
+			end
+
+			-- download HTTP url → local file → getcustomasset → rbxassetid
+			local function resolveHttpImage(url, callback)
+				task.spawn(function()
+					local requestFn  = getRequestFn()
+					local assetFn    = getAssetFn()
+					local writefileFn = getWritefileFn()
+
+					if not (requestFn and assetFn and writefileFn) then
+						-- no executor support, just pass the url directly and hope
+						callback(url, false)
+						return
+					end
+
+					-- build a safe local filename
+					local ext = url:match("%.([%a%d]+)%??") or "jpg"
+					ext = ext:lower()
+					local safeName = url:gsub("[^%w]","_"):sub(1,60)
+					local cacheDir = "OceanUI_ImgCache"
+					pcall(function()
+						local mkf = rawget(_G,"makefolder") or (type(getgenv)=="function" and getgenv() and getgenv().makefolder)
+						local isf = rawget(_G,"isfolder")   or (type(getgenv)=="function" and getgenv() and getgenv().isfolder)
+						if mkf and isf and not isf(cacheDir) then mkf(cacheDir) end
+					end)
+					local localPath = cacheDir.."/"..safeName.."."..ext
+
+					local ok, resp = pcall(requestFn, {Url=url, Method="GET"})
+					if not ok or not resp or not resp.Body or resp.Body=="" or resp.Success==false then
+						callback(url, false)
+						return
+					end
+
+					local wrote = pcall(writefileFn, localPath, resp.Body)
+					if not wrote then
+						callback(url, false)
+						return
+					end
+
+					local okA, asset = pcall(assetFn, localPath)
+					if okA and asset then
+						callback(asset, true)
+					else
+						callback(url, false)
+					end
+				end)
+			end
+
+			-- outer container
 			local r = frame(scroll, {
 				name="ImgViewRow", colorKey="bg", trans=1,
 				size=UDim2.new(1,0,0, IMG_H + 82), z=7,
@@ -2364,7 +2438,6 @@ function OceanUI:CreateWindow(config)
 				pos=UDim2.new(0,0,1,-1), z=8,
 			})
 
-			-- title label
 			if opts.Title then
 				lbl(r,{
 					text=opts.Title, font=Enum.Font.GothamMedium, size=13, colorKey="text",
@@ -2374,7 +2447,6 @@ function OceanUI:CreateWindow(config)
 
 			local topPad = opts.Title and 26 or 4
 
-			-- image frame
 			local imgHolder = frame(r,{
 				name="ImgHolder", colorKey="raised",
 				size=UDim2.new(1,0,0,IMG_H),
@@ -2385,21 +2457,26 @@ function OceanUI:CreateWindow(config)
 
 			local imgLabel = inst("ImageLabel",{
 				BackgroundTransparency=1,
-				Image = opts.Image or "",
+				Image="",
 				Size=UDim2.fromScale(1,1),
 				ScaleType=Enum.ScaleType.Fit,
 				ZIndex=9,
 			}, imgHolder)
 			rnd(imgLabel, 6)
 
-			-- placeholder text when no image
 			local placeholderLbl = lbl(imgHolder,{
 				text="No image", font=Enum.Font.Gotham, size=12, colorKey="muted",
 				sz=UDim2.fromScale(1,1), xa=Enum.TextXAlignment.Center, z=10,
 			})
-			placeholderLbl.Visible = (opts.Image == nil or opts.Image == "")
 
-			-- URL textbox row
+			local loadingLbl = lbl(imgHolder,{
+				text="Loading...", font=Enum.Font.Gotham, size=12, colorKey="sub",
+				sz=UDim2.fromScale(1,1), xa=Enum.TextXAlignment.Center, z=10,
+			})
+			loadingLbl.Visible = false
+			placeholderLbl.Visible = true
+
+			-- URL textbox
 			local tbRow = frame(r,{
 				name="UrlRow", colorKey="bg", trans=1,
 				size=UDim2.new(1,0,0,28),
@@ -2407,41 +2484,32 @@ function OceanUI:CreateWindow(config)
 			})
 
 			local urlBox = inst("TextBox",{
-				BackgroundColor3=K.raised,
-				BackgroundTransparency=0,
-				BorderSizePixel=0,
-				PlaceholderText="Paste image URL...",
+				BackgroundColor3=K.raised, BackgroundTransparency=0, BorderSizePixel=0,
+				PlaceholderText="Paste image URL or rbxassetid://...",
 				PlaceholderColor3=K.muted,
-				Text = opts.Image or "",
-				TextColor3=K.text,
-				Font=Enum.Font.Gotham,
-				TextSize=12,
+				Text="",
+				TextColor3=K.text, Font=Enum.Font.Gotham, TextSize=12,
 				TextXAlignment=Enum.TextXAlignment.Left,
 				ClearTextOnFocus=false,
-				Size=UDim2.new(1,0,1,0),
-				ZIndex=9,
+				Size=UDim2.new(1,0,1,0), ZIndex=9,
 			}, tbRow)
-			rnd(urlBox, 5)
-			brd(urlBox,"border",1)
-			pad(urlBox, 8, 8, 0, 0)
+			rnd(urlBox,5); brd(urlBox,"border",1); pad(urlBox,8,8,0,0)
 			registerThemeUpdater(function()
 				urlBox.BackgroundColor3=K.raised
 				urlBox.TextColor3=K.text
 				urlBox.PlaceholderColor3=K.muted
 			end, urlBox)
 
-			-- height slider row
+			-- height slider
 			local slRow = frame(r,{
 				name="SlRow", colorKey="bg", trans=1,
 				size=UDim2.new(1,0,0,28),
 				pos=UDim2.new(0,0,0, topPad + IMG_H + 40), z=8,
 			})
-
 			lbl(slRow,{
 				text="Height", font=Enum.Font.Gotham, size=11, colorKey="muted",
-				sz=UDim2.new(0,42,1,0), pos=UDim2.new(0,0,0,0), z=9,
+				sz=UDim2.new(0,42,1,0), z=9,
 			})
-
 			local sliderWrap = frame(slRow,{
 				name="SlWrap", colorKey="bg", trans=1,
 				size=UDim2.new(1,-86,1,0), pos=UDim2.new(0,44,0,0), z=9,
@@ -2455,53 +2523,73 @@ function OceanUI:CreateWindow(config)
 				sz=UDim2.new(0,38,1,0), pos=UDim2.new(1,-38,0,0), xa=Enum.TextXAlignment.Right, z=9,
 			})
 
-			-- live update helpers
 			local currentH = IMG_H
 			local function applyHeight(h)
 				currentH = math.floor(h)
 				heightValLbl.Text = tostring(currentH).."px"
-				imgHolder.Size     = UDim2.new(1,0,0,currentH)
-				tbRow.Position     = UDim2.new(0,0,0, topPad+currentH+6)
-				slRow.Position     = UDim2.new(0,0,0, topPad+currentH+40)
-				r.Size             = UDim2.new(1,0,0, topPad+currentH+82)
+				imgHolder.Size = UDim2.new(1,0,0,currentH)
+				tbRow.Position = UDim2.new(0,0,0, topPad+currentH+6)
+				slRow.Position = UDim2.new(0,0,0, topPad+currentH+40)
+				r.Size         = UDim2.new(1,0,0, topPad+currentH+82)
 			end
-
 			sl.changed:Connect(function(v) applyHeight(v) end)
 
 			local function applyUrl(url)
-				url = url:match("^%s*(.-)%s*$") -- trim
+				url = url:match("^%s*(.-)%s*$")
 				if url == "" then
 					imgLabel.Image = ""
 					placeholderLbl.Visible = true
-				else
-					imgLabel.Image = url
-					placeholderLbl.Visible = false
+					loadingLbl.Visible = false
+					return
 				end
+
+				-- rbxassetid or pure number → set directly
+				if url:match("^rbxassetid://") or url:match("^%d+$") then
+					local asset = url:match("^%d+$") and ("rbxassetid://"..url) or url
+					imgLabel.Image = asset
+					placeholderLbl.Visible = false
+					loadingLbl.Visible = false
+					if opts.Callback then pcall(opts.Callback, asset, currentH) end
+					return
+				end
+
+				-- HTTP(S) url → download via executor
+				if url:match("^https?://") then
+					placeholderLbl.Visible = false
+					loadingLbl.Visible = true
+					imgLabel.Image = ""
+					resolveHttpImage(url, function(resolvedAsset, success)
+						loadingLbl.Visible = false
+						imgLabel.Image = resolvedAsset
+						placeholderLbl.Visible = (resolvedAsset == "" or resolvedAsset == nil)
+						if opts.Callback then pcall(opts.Callback, resolvedAsset, currentH) end
+					end)
+					return
+				end
+
+				-- fallback: just set whatever it is
+				imgLabel.Image = url
+				placeholderLbl.Visible = false
+				loadingLbl.Visible = false
 				if opts.Callback then pcall(opts.Callback, url, currentH) end
 			end
 
 			urlBox.FocusLost:Connect(function() applyUrl(urlBox.Text) end)
-			-- also apply on enter
 			urlBox:GetPropertyChangedSignal("Text"):Connect(function()
-				if urlBox.Text:sub(-1) == "\n" then
+				if urlBox.Text:sub(-1)=="\n" then
 					urlBox.Text = urlBox.Text:gsub("\n","")
 					applyUrl(urlBox.Text)
 				end
 			end)
 
-			if opts.Image and opts.Image ~= "" then
+			if opts.Image and opts.Image~="" then
+				urlBox.Text = opts.Image
 				applyUrl(opts.Image)
 			end
 
 			return {
-				SetImage = function(_, url)
-					urlBox.Text = url
-					applyUrl(url)
-				end,
-				SetHeight = function(_, h)
-					sl.setValue(h)
-					applyHeight(h)
-				end,
+				SetImage = function(_, url) urlBox.Text=url; applyUrl(url) end,
+				SetHeight = function(_, h) sl.setValue(h); applyHeight(h) end,
 				GetImage  = function() return imgLabel.Image end,
 				GetHeight = function() return currentH end,
 			}
