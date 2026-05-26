@@ -2258,6 +2258,22 @@ function OceanUI:CreateWindow(config)
 			r.LayoutOrder = rowCounter
 		end
 
+		--- Privacy Mode toggle — hides player name and swaps avatar to Roblox CEO.
+		-- Syntax: tab:AddPrivacyToggle(tab, { Title=..., Subtitle=..., Default=false })
+		function Tab:AddPrivacyToggle(_, opts)
+			opts = opts or {}
+			return self:AddToggle({
+				Title    = opts.Title    or "Privacy Mode",
+				Subtitle = opts.Subtitle or "Hides your name & avatar",
+				Icon     = opts.Icon     or "eye-off",
+				Default  = opts.Default  or false,
+				Callback = function(state)
+					Window:SetPrivacy(state)
+					if opts.Callback then pcall(opts.Callback, state) end
+				end,
+			})
+		end
+
 		return Tab
 	end
 
@@ -2278,23 +2294,7 @@ function OceanUI:CreateWindow(config)
 		end
 	end
 
-	--- Convenience: adds a pre-built Privacy toggle row to any Tab.
-	-- Usage: Window:AddPrivacyToggle(mySettingsTab)
-	--        Window:AddPrivacyToggle(mySettingsTab, { Default = false })
-	function Window:AddPrivacyToggle(tab, opts)
-		opts = opts or {}
-		local toggleOpts = {
-			Title    = opts.Title    or "Privacy Mode",
-			Subtitle = opts.Subtitle or "Hides your name & avatar",
-			Icon     = opts.Icon     or "eye-off",
-			Default  = opts.Default  or false,
-			Callback = function(state)
-				self:SetPrivacy(state)
-				if opts.Callback then pcall(opts.Callback, state) end
-			end,
-		}
-		return tab:AddToggle(toggleOpts)
-	end
+
 
 	-- NOTIFICATION SYSTEM
 	local notifContainer = frame(sg,{
