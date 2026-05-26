@@ -1677,6 +1677,14 @@ function OceanUI:CreateWindow(config)
 		end
 	end
 
+	-- Privacy mode state (Window-scope damit SetPrivacy darauf zugreifen kann)
+	local _privacyActive    = false
+	local _privacyRealName  = player.DisplayName
+	local _privacyRealThumb = ""
+	local _privacyCeoThumb  = "rbxassetid://15286438075"
+	local _privacyNameLbl   = nil
+	local _privacyAvatarImg = nil
+
 	if true then -- always create sidebar (desktop + mobile)
 		sidebar = frame(body,{
 			name="Sidebar", colorKey="bg", trans=1,
@@ -1705,14 +1713,6 @@ function OceanUI:CreateWindow(config)
 			Padding=UDim.new(0,4),
 		}, sidebarScroll)
 		pad(sidebarScroll, 6, 6, 8, 8)
-
-		-- Privacy mode state (shared across profile UI)
-		local _privacyActive   = false
-		local _privacyRealName = player.DisplayName
-		local _privacyRealThumb = ""
-		local _privacyCeoThumb  = "rbxassetid://15286438075"
-		local _privacyNameLbl   = nil
-		local _privacyAvatarImg = nil
 
 		task.spawn(function()
 			pcall(function()
@@ -2848,18 +2848,19 @@ function OceanUI:CreateWindow(config)
 
 		local hasBg = url and url ~= ""
 
-		-- Sidebar und ContentArea transparent/opak je nach ob Hintergrundbild aktiv
 		local sidebar = body:FindFirstChild("Sidebar")
 		local ca      = body:FindFirstChild("ContentArea")
 		if sidebar then sidebar.BackgroundTransparency = hasBg and 1 or 0 end
 		if ca      then ca.BackgroundTransparency      = hasBg and 1 or 0 end
-		-- Tab-Frames auch
 		if ca then
 			for _, tab in ipairs(ca:GetChildren()) do
 				if tab.Name:sub(1,4) == "Tab_" and tab:IsA("Frame") then
 					tab.BackgroundTransparency = hasBg and 1 or 0
 				end
 			end
+			-- Fisch (BgLogo) ein/ausblenden
+			local bgLogo = ca:FindFirstChild("BgLogo")
+			if bgLogo then bgLogo.Visible = not hasBg end
 		end
 
 		if not hasBg then return end
