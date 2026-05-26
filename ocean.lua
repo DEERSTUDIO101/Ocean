@@ -1268,6 +1268,19 @@ function OceanUI:CreateWindow(config)
 	brd(win, "border", 1)
 	rnd(win, 10)
 
+	-- Background image layer (sits above bg color, below everything else)
+	local _bgImageLabel = inst("ImageLabel",{
+		Name="BgImage",
+		BackgroundTransparency=1,
+		Image="",
+		ImageTransparency=0.35,
+		Size=UDim2.fromScale(1,1),
+		Position=UDim2.fromScale(0,0),
+		ScaleType=Enum.ScaleType.Crop,
+		ZIndex=3,
+	}, win)
+	rnd(_bgImageLabel, 10)
+
 	local outerGlow = frame(win,{
 		name="OuterGlow", colorKey="white", trans=0.93,
 		size=UDim2.new(1,10,1,10), pos=UDim2.new(0,-5,0,-5),
@@ -2351,32 +2364,37 @@ function OceanUI:CreateWindow(config)
 			local IMG_H     = opts.Height or DEFAULT_H
 			local MIN_H, MAX_H = 60, 400
 
-			-- resolve executor HTTP + local asset functions (same approach as Syde)
+			-- resolve executor HTTP + local asset functions
 			local function getRequestFn()
-				local syn = rawget(_G,"syn") or (type(getgenv)=="function" and getgenv() and getgenv().syn)
-				if syn and syn.request then return syn.request end
-				local fns = {"request","http_request","httprequest"}
-				for _,n in ipairs(fns) do
-					local f = rawget(_G,n) or (type(getgenv)=="function" and getgenv() and getgenv()[n])
-					if type(f)=="function" then return f end
+				if type(request)=="function" then return request end
+				if type(http_request)=="function" then return http_request end
+				if type(httprequest)=="function" then return httprequest end
+				local ok, genv = pcall(getgenv)
+				if ok and genv then
+					if type(genv.request)=="function" then return genv.request end
+					if type(genv.http_request)=="function" then return genv.http_request end
+					if genv.syn and type(genv.syn.request)=="function" then return genv.syn.request end
+					if genv.http and type(genv.http.request)=="function" then return genv.http.request end
 				end
-				local h = rawget(_G,"http") or (type(getgenv)=="function" and getgenv() and getgenv().http)
-				if h and h.request then return h.request end
 				return nil
 			end
 
 			local function getAssetFn()
-				local fns = {"getcustomasset","getsynasset"}
-				for _,n in ipairs(fns) do
-					local f = rawget(_G,n) or (type(getgenv)=="function" and getgenv() and getgenv()[n])
-					if type(f)=="function" then return f end
+				if type(getcustomasset)=="function" then return getcustomasset end
+				if type(getsynasset)=="function" then return getsynasset end
+				local ok, genv = pcall(getgenv)
+				if ok and genv then
+					if type(genv.getcustomasset)=="function" then return genv.getcustomasset end
+					if type(genv.getsynasset)=="function" then return genv.getsynasset end
 				end
 				return nil
 			end
 
 			local function getWritefileFn()
-				local f = rawget(_G,"writefile") or (type(getgenv)=="function" and getgenv() and getgenv().writefile)
-				return type(f)=="function" and f or nil
+				if type(writefile)=="function" then return writefile end
+				local ok, genv = pcall(getgenv)
+				if ok and genv and type(genv.writefile)=="function" then return genv.writefile end
+				return nil
 			end
 
 			-- download HTTP url → local file → getcustomasset → rbxassetid
@@ -2593,6 +2611,132 @@ function OceanUI:CreateWindow(config)
 				GetImage  = function() return imgLabel.Image end,
 				GetHeight = function() return currentH end,
 			}
+		end
+
+		function Tab:AddBackgroundPicker(opts)
+			opts = opts or {}
+			rowCounter = rowCounter + 1
+
+			-- outer container: URL box (28px) + slider row (36px) + divider
+			local r = frame(scroll, {
+				name="BgPickerRow", colorKey="bg", trans=1,
+				size=UDim2.new(1,0,0,82), z=7,
+			})
+			r.LayoutOrder = rowCounter
+
+			frame(r,{
+				name="Div", colorKey="border",
+				size=UDim2.new(1,0,0,1), pos=UDim2.new(0,0,1,-1), z=8,
+			})
+
+			if opts.Title then
+				rowCounter = rowCounter
+				lbl(r,{
+					text=opts.Title, font=Enum.Font.GothamMedium, size=13, colorKey="text",
+					sz=UDim2.new(1,0,0,18), pos=UDim2.new(0,0,0,0), z=8,
+				})
+				r.Size = UDim2.new(1,0,0,100)
+			end
+			local topPad = opts.Title and 20 or 0
+
+			-- URL textbox
+			local urlBox = inst("TextBox",{
+				BackgroundColor3=K.raised, BackgroundTransparency=0, BorderSizePixel=0,
+				PlaceholderText="Background image URL or rbxassetid://...",
+				PlaceholderColor3=K.muted,
+				Text=opts.Default or "",
+				TextColor3=K.text, Font=Enum.Font.Gotham, TextSize=12,
+				TextXAlignment=Enum.TextXAlignment.Left,
+				ClearTextOnFocus=false,
+				Size=UDim2.new(1,0,0,28),
+				Position=UDim2.new(0,0,0,topPad),
+				ZIndex=9,
+			}, r)
+			rnd(urlBox,5); brd(urlBox,"border",1); pad(urlBox,8,8,0,0)
+			registerThemeUpdater(function()
+				urlBox.BackgroundColor3=K.raised
+				urlBox.TextColor3=K.text
+				urlBox.PlaceholderColor3=K.muted
+			end, urlBox)
+
+			-- transparency slider row
+			local slRow = frame(r,{
+				name="SlRow", colorKey="bg", trans=1,
+				size=UDim2.new(1,0,0,28),
+				pos=UDim2.new(0,0,0,topPad+34), z=8,
+			})
+			lbl(slRow,{
+				text="Opacity", font=Enum.Font.Gotham, size=11, colorKey="muted",
+				sz=UDim2.new(0,46,1,0), z=9,
+			})
+			local sliderWrap = frame(slRow,{
+				name="SlWrap", colorKey="bg", trans=1,
+				size=UDim2.new(1,-90,1,0), pos=UDim2.new(0,48,0,0), z=9,
+			})
+			-- opacity 0-100 (maps to transparency 1.0 → 0.0)
+			local DEFAULT_OPACITY = opts.Opacity or 65
+			local sl = makeSlider(sliderWrap, 0, 100, DEFAULT_OPACITY)
+			sl.frame.Size = UDim2.fromScale(1,1)
+			sl.frame.Position = UDim2.fromScale(0,0)
+
+			local opacityValLbl = lbl(slRow,{
+				text=tostring(DEFAULT_OPACITY).."%", font=Enum.Font.GothamBold, size=11, colorKey="white",
+				sz=UDim2.new(0,38,1,0), pos=UDim2.new(1,-38,0,0), xa=Enum.TextXAlignment.Right, z=9,
+			})
+
+			local currentOpacity = DEFAULT_OPACITY
+			local currentUrl     = opts.Default or ""
+
+			local function applyBackground()
+				local trans = 1 - (currentOpacity / 100)
+				Window:SetBackground(currentUrl, trans)
+				if opts.Callback then pcall(opts.Callback, currentUrl, currentOpacity) end
+			end
+
+			sl.changed:Connect(function(v)
+				currentOpacity = math.floor(v)
+				opacityValLbl.Text = tostring(currentOpacity).."%"
+				applyBackground()
+			end)
+
+			urlBox.FocusLost:Connect(function()
+				currentUrl = urlBox.Text:match("^%s*(.-)%s*$")
+				applyBackground()
+			end)
+			urlBox:GetPropertyChangedSignal("Text"):Connect(function()
+				if urlBox.Text:sub(-1)=="\n" then
+					urlBox.Text = urlBox.Text:gsub("\n","")
+					currentUrl = urlBox.Text:match("^%s*(.-)%s*$")
+					applyBackground()
+				end
+			end)
+
+			-- apply on load if default set
+			if currentUrl ~= "" then
+				task.defer(applyBackground)
+			end
+
+			-- ConfigManager-compatible element (Get/Set)
+			local element = {
+				Get = function()
+					return { url=currentUrl, opacity=currentOpacity }
+				end,
+				Set = function(_, val)
+					if type(val) == "table" then
+						currentUrl     = val.url or ""
+						currentOpacity = val.opacity or DEFAULT_OPACITY
+					elseif type(val) == "string" then
+						-- legacy: just a url string
+						currentUrl = val
+					end
+					urlBox.Text = currentUrl
+					sl.setValue(currentOpacity)
+					opacityValLbl.Text = tostring(currentOpacity).."%"
+					applyBackground()
+				end,
+			}
+
+			return element
 		end
 
 		function Tab:AddSeparator()
@@ -2825,6 +2969,71 @@ function OceanUI:CreateWindow(config)
 		task.delay(duration, dismiss)
 	end
 
+	function Window:SetBackground(urlOrAsset, transparency)
+		local trans = transparency or 0.35
+		_bgImageLabel.ImageTransparency = trans
+
+		if urlOrAsset == nil or urlOrAsset == "" then
+			_bgImageLabel.Image = ""
+			return
+		end
+
+		-- rbxassetid or plain number → set directly
+		if tostring(urlOrAsset):match("^rbxassetid://") or tostring(urlOrAsset):match("^%d+$") then
+			local asset = tostring(urlOrAsset):match("^%d+$") and ("rbxassetid://"..urlOrAsset) or urlOrAsset
+			_bgImageLabel.Image = asset
+			return
+		end
+
+		-- HTTP(S) → download via executor
+		if tostring(urlOrAsset):match("^https?://") then
+			_bgImageLabel.Image = ""
+			task.spawn(function()
+				local requestFn
+				if type(request)=="function" then requestFn=request
+				elseif type(http_request)=="function" then requestFn=http_request
+				elseif type(httprequest)=="function" then requestFn=httprequest end
+				local assetFn
+				if type(getcustomasset)=="function" then assetFn=getcustomasset
+				elseif type(getsynasset)=="function" then assetFn=getsynasset end
+				local writefileFn = type(writefile)=="function" and writefile or nil
+
+				if not (requestFn and assetFn and writefileFn) then
+					_bgImageLabel.Image = urlOrAsset
+					return
+				end
+
+				local ext = urlOrAsset:match("%.([%a%d]+)%??") or "jpg"
+				local safeName = urlOrAsset:gsub("[^%w]","_"):sub(1,60)
+				local cacheDir = "OceanUI_ImgCache"
+				pcall(function()
+					local mkf = type(makefolder)=="function" and makefolder or nil
+					local isf = type(isfolder)=="function" and isfolder or nil
+					if mkf and isf and not isf(cacheDir) then mkf(cacheDir) end
+				end)
+				local localPath = cacheDir.."/"..safeName.."."..ext
+
+				local ok, resp = pcall(requestFn, {Url=urlOrAsset, Method="GET"})
+				if not ok or not resp or not resp.Body or resp.Body=="" or resp.Success==false then
+					_bgImageLabel.Image = urlOrAsset
+					return
+				end
+				local wrote = pcall(writefileFn, localPath, resp.Body)
+				if not wrote then _bgImageLabel.Image = urlOrAsset; return end
+
+				local okA, asset = pcall(assetFn, localPath)
+				if okA and asset then
+					_bgImageLabel.Image = asset
+				else
+					_bgImageLabel.Image = urlOrAsset
+				end
+			end)
+			return
+		end
+
+		_bgImageLabel.Image = urlOrAsset
+	end
+
 	function Window:SetPrivacy(state)
 		_privacyActive = state == true
 		if _privacyNameLbl then
@@ -2929,6 +3138,8 @@ function OceanUI:CreateWindow(config)
 						data[id] = {type = "KeyCode", value = v.Name}
 					elseif typeof(v) == "Color3" then
 						data[id] = {type = "Color3", r = v.R, g = v.G, b = v.B}
+					elseif type(v) == "table" then
+						data[id] = {type = "Table", value = v}
 					else
 						data[id] = {type = "Raw", value = v}
 					end
@@ -2949,6 +3160,8 @@ function OceanUI:CreateWindow(config)
 								pcall(function() el:Set(Enum.KeyCode[dat.value]) end)
 							elseif dat.type == "Color3" then
 								pcall(function() el:Set(Color3.new(dat.r, dat.g, dat.b)) end)
+							elseif dat.type == "Table" then
+								pcall(function() el:Set(dat.value) end)
 							elseif dat.type == "Raw" then
 								pcall(function() el:Set(dat.value) end)
 							end
