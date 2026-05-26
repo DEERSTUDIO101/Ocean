@@ -173,3 +173,9 @@ SettingsTab:AddSlider({
 		print("UI Scale:", value, "%")
 	end,
 })
+
+SettingsTab:AddPrivacyToggle(SettingsTab, {
+    Title    = "Privacy Mode",
+    Subtitle = "Versteckt deinen Namen & Avatar",
+    Default  = false,
+})
