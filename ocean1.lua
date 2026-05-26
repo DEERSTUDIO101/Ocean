@@ -1681,7 +1681,7 @@ function OceanUI:CreateWindow(config)
 	local _privacyActive    = false
 	local _privacyRealName  = player.DisplayName
 	local _privacyRealThumb = ""
-	local _privacyCeoThumb  = "rbxassetid://15286438075"
+	local _privacyCeoThumb  = "rbxthumb://type=AvatarBust&id=20986&w=100&h=100"
 	local _privacyNameLbl   = nil
 	local _privacyAvatarImg = nil
 
@@ -1713,17 +1713,6 @@ function OceanUI:CreateWindow(config)
 			Padding=UDim.new(0,4),
 		}, sidebarScroll)
 		pad(sidebarScroll, 6, 6, 8, 8)
-
-		task.spawn(function()
-			pcall(function()
-				local thumb = Players:GetUserThumbnailAsync(
-					20986,
-					Enum.ThumbnailType.AvatarBust,
-					Enum.ThumbnailSize.Size100x100
-				)
-				if thumb then _privacyCeoThumb = thumb end
-			end)
-		end)
 
 		local profileSection = frame(sidebar,{
 			name="Profile", colorKey="bg", trans=1,
