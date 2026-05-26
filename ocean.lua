@@ -1677,6 +1677,14 @@ function OceanUI:CreateWindow(config)
 		end
 	end
 
+	-- Privacy mode state (shared across profile UI + SetPrivacy)
+	local _privacyActive   = false
+	local _privacyRealName = player.DisplayName
+	local _privacyRealThumb = ""
+	local _privacyCeoThumb  = "rbxassetid://15286438075"
+	local _privacyNameLbl   = nil
+	local _privacyAvatarImg = nil
+
 	if true then -- always create sidebar (desktop + mobile)
 		sidebar = frame(body,{
 			name="Sidebar", colorKey="bg", trans=1,
@@ -1705,14 +1713,6 @@ function OceanUI:CreateWindow(config)
 			Padding=UDim.new(0,4),
 		}, sidebarScroll)
 		pad(sidebarScroll, 6, 6, 8, 8)
-
-		-- Privacy mode state (shared across profile UI)
-		local _privacyActive   = false
-		local _privacyRealName = player.DisplayName
-		local _privacyRealThumb = ""
-		local _privacyCeoThumb  = "rbxassetid://15286438075"
-		local _privacyNameLbl   = nil
-		local _privacyAvatarImg = nil
 
 		task.spawn(function()
 			pcall(function()
