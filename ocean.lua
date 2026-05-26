@@ -2364,80 +2364,24 @@ function OceanUI:CreateWindow(config)
 			local IMG_H     = opts.Height or DEFAULT_H
 			local MIN_H, MAX_H = 60, 400
 
-			-- resolve executor HTTP + local asset functions
-			local function getRequestFn()
-				if type(request)=="function" then return request end
-				if type(http_request)=="function" then return http_request end
-				if type(httprequest)=="function" then return httprequest end
-				local ok, genv = pcall(getgenv)
-				if ok and genv then
-					if type(genv.request)=="function" then return genv.request end
-					if type(genv.http_request)=="function" then return genv.http_request end
-					if genv.syn and type(genv.syn.request)=="function" then return genv.syn.request end
-					if genv.http and type(genv.http.request)=="function" then return genv.http.request end
-				end
-				return nil
-			end
-
-			local function getAssetFn()
-				if type(getcustomasset)=="function" then return getcustomasset end
-				if type(getsynasset)=="function" then return getsynasset end
-				local ok, genv = pcall(getgenv)
-				if ok and genv then
-					if type(genv.getcustomasset)=="function" then return genv.getcustomasset end
-					if type(genv.getsynasset)=="function" then return genv.getsynasset end
-				end
-				return nil
-			end
-
-			local function getWritefileFn()
-				if type(writefile)=="function" then return writefile end
-				local ok, genv = pcall(getgenv)
-				if ok and genv and type(genv.writefile)=="function" then return genv.writefile end
-				return nil
-			end
-
-			-- download HTTP url → local file → getcustomasset → rbxassetid
+			-- download HTTP url → use shared window cache resolver
+			local _imgCache = {} -- per-imageview in-memory cache
 			local function resolveHttpImage(url, callback)
-				task.spawn(function()
-					local requestFn  = getRequestFn()
-					local assetFn    = getAssetFn()
-					local writefileFn = getWritefileFn()
-
-					if not (requestFn and assetFn and writefileFn) then
-						-- no executor support, just pass the url directly and hope
-						callback(url, false)
-						return
-					end
-
-					-- build a safe local filename
-					local ext = url:match("%.([%a%d]+)%??") or "jpg"
-					ext = ext:lower()
-					local safeName = url:gsub("[^%w]","_"):sub(1,60)
-					local cacheDir = "OceanUI_ImgCache"
-					pcall(function()
-						local mkf = rawget(_G,"makefolder") or (type(getgenv)=="function" and getgenv() and getgenv().makefolder)
-						local isf = rawget(_G,"isfolder")   or (type(getgenv)=="function" and getgenv() and getgenv().isfolder)
-						if mkf and isf and not isf(cacheDir) then mkf(cacheDir) end
-					end)
-					local localPath = cacheDir.."/"..safeName.."."..ext
-
-					local ok, resp = pcall(requestFn, {Url=url, Method="GET"})
-					if not ok or not resp or not resp.Body or resp.Body=="" or resp.Success==false then
-						callback(url, false)
-						return
-					end
-
-					local wrote = pcall(writefileFn, localPath, resp.Body)
-					if not wrote then
-						callback(url, false)
-						return
-					end
-
-					local okA, asset = pcall(assetFn, localPath)
-					if okA and asset then
-						callback(asset, true)
-					else
+				-- check shared window cache first
+				if _winImgCache[url] then
+					callback(_winImgCache[url], true)
+					return
+				end
+				-- check per-view cache
+				if _imgCache[url] then
+					callback(_imgCache[url], true)
+					return
+				end
+				_resolveAndApply(url, function(asset)
+					_imgCache[url] = asset
+					callback(asset, asset ~= url)
+				end)
+			end
 						callback(url, false)
 					end
 				end)
@@ -2969,6 +2913,67 @@ function OceanUI:CreateWindow(config)
 		task.delay(duration, dismiss)
 	end
 
+	-- shared image cache for this window instance (url → rbxasset string)
+	local _winImgCache = {}
+
+	local function _resolveAndApply(urlOrAsset, onResolved)
+		local url = tostring(urlOrAsset)
+
+		-- in-memory hit
+		if _winImgCache[url] then
+			onResolved(_winImgCache[url])
+			return
+		end
+
+		task.spawn(function()
+			local requestFn
+			if type(request)=="function" then requestFn=request
+			elseif type(http_request)=="function" then requestFn=http_request
+			elseif type(httprequest)=="function" then requestFn=httprequest end
+			local assetFn
+			if type(getcustomasset)=="function" then assetFn=getcustomasset
+			elseif type(getsynasset)=="function" then assetFn=getsynasset end
+			local writefileFn = type(writefile)=="function" and writefile or nil
+
+			if not (requestFn and assetFn and writefileFn) then
+				onResolved(url); return
+			end
+
+			local ext      = url:match("%.([%a%d]+)%??") or "jpg"
+			local safeName = url:gsub("[^%w]","_"):sub(1,60)
+			local cacheDir = "OceanUI_ImgCache"
+			pcall(function()
+				if type(makefolder)=="function" and type(isfolder)=="function" and not isfolder(cacheDir) then
+					makefolder(cacheDir)
+				end
+			end)
+			local localPath = cacheDir.."/"..safeName.."."..ext
+
+			-- file already on disk → skip download
+			local cached = false
+			pcall(function()
+				if type(isfile)=="function" and isfile(localPath) then cached=true end
+			end)
+
+			if not cached then
+				local ok, resp = pcall(requestFn, {Url=url, Method="GET"})
+				if not ok or not resp or not resp.Body or resp.Body=="" or resp.Success==false then
+					onResolved(url); return
+				end
+				local wrote = pcall(writefileFn, localPath, resp.Body)
+				if not wrote then onResolved(url); return end
+			end
+
+			local okA, asset = pcall(assetFn, localPath)
+			if okA and asset then
+				_winImgCache[url] = asset
+				onResolved(asset)
+			else
+				onResolved(url)
+			end
+		end)
+	end
+
 	function Window:SetBackground(urlOrAsset, transparency)
 		local trans = transparency or 0.35
 		_bgImageLabel.ImageTransparency = trans
@@ -2978,60 +2983,24 @@ function OceanUI:CreateWindow(config)
 			return
 		end
 
-		-- rbxassetid or plain number → set directly
-		if tostring(urlOrAsset):match("^rbxassetid://") or tostring(urlOrAsset):match("^%d+$") then
-			local asset = tostring(urlOrAsset):match("^%d+$") and ("rbxassetid://"..urlOrAsset) or urlOrAsset
-			_bgImageLabel.Image = asset
+		local url = tostring(urlOrAsset)
+
+		-- rbxassetid or plain number → set directly, no download needed
+		if url:match("^rbxassetid://") or url:match("^%d+$") then
+			_bgImageLabel.Image = url:match("^%d+$") and ("rbxassetid://"..url) or url
 			return
 		end
 
-		-- HTTP(S) → download via executor
-		if tostring(urlOrAsset):match("^https?://") then
+		-- HTTP(S) → use shared cached resolver
+		if url:match("^https?://") then
 			_bgImageLabel.Image = ""
-			task.spawn(function()
-				local requestFn
-				if type(request)=="function" then requestFn=request
-				elseif type(http_request)=="function" then requestFn=http_request
-				elseif type(httprequest)=="function" then requestFn=httprequest end
-				local assetFn
-				if type(getcustomasset)=="function" then assetFn=getcustomasset
-				elseif type(getsynasset)=="function" then assetFn=getsynasset end
-				local writefileFn = type(writefile)=="function" and writefile or nil
-
-				if not (requestFn and assetFn and writefileFn) then
-					_bgImageLabel.Image = urlOrAsset
-					return
-				end
-
-				local ext = urlOrAsset:match("%.([%a%d]+)%??") or "jpg"
-				local safeName = urlOrAsset:gsub("[^%w]","_"):sub(1,60)
-				local cacheDir = "OceanUI_ImgCache"
-				pcall(function()
-					local mkf = type(makefolder)=="function" and makefolder or nil
-					local isf = type(isfolder)=="function" and isfolder or nil
-					if mkf and isf and not isf(cacheDir) then mkf(cacheDir) end
-				end)
-				local localPath = cacheDir.."/"..safeName.."."..ext
-
-				local ok, resp = pcall(requestFn, {Url=urlOrAsset, Method="GET"})
-				if not ok or not resp or not resp.Body or resp.Body=="" or resp.Success==false then
-					_bgImageLabel.Image = urlOrAsset
-					return
-				end
-				local wrote = pcall(writefileFn, localPath, resp.Body)
-				if not wrote then _bgImageLabel.Image = urlOrAsset; return end
-
-				local okA, asset = pcall(assetFn, localPath)
-				if okA and asset then
-					_bgImageLabel.Image = asset
-				else
-					_bgImageLabel.Image = urlOrAsset
-				end
+			_resolveAndApply(url, function(asset)
+				_bgImageLabel.Image = asset
 			end)
 			return
 		end
 
-		_bgImageLabel.Image = urlOrAsset
+		_bgImageLabel.Image = url
 	end
 
 	function Window:SetPrivacy(state)
