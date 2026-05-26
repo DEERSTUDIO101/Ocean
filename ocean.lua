@@ -1,4 +1,3 @@
-
 local Players      = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local RunService   = game:GetService("RunService")
@@ -29,27 +28,7 @@ end
 
 local CORNER = 10
 
--- ══════════════════════════════════════════════
---              CUSTOM THEME SYSTEM
--- ══════════════════════════════════════════════
--- Each theme defines the full color palette used by OceanUI.
--- Keys:
---   black    – absolute black (toggle knob active)
---   bg       – window / sidebar / row background
---   surface  – content area background
---   raised   – buttons, toggle tracks, dropdown headers
---   border   – dividers, strokes
---   borderHi – highlight strokes (minimized pill)
---   muted    – placeholder / subtitle / executor label text
---   sub      – secondary text (nav labels, dropdown items)
---   text     – primary text (row titles)
---   white    – knobs, slider fills, accent pill
---   logoTop  – logo gradient top color
---   logoMid  – logo gradient mid color
---   logoBot  – logo gradient bottom color
-
 local THEMES = {
-	-- ── Default dark theme ──────────────────────
 	Ocean = {
 		black    = Color3.fromRGB(0,   0,   0  ),
 		bg       = Color3.fromRGB(18,  18,  18 ),
@@ -66,7 +45,6 @@ local THEMES = {
 		logoBot  = Color3.fromRGB(90,  90,  90 ),
 	},
 
-	-- ── Deep ocean blue ─────────────────────────
 	DeepOcean = {
 		black    = Color3.fromRGB(0,   5,   15 ),
 		bg       = Color3.fromRGB(8,   18,  38 ),
@@ -83,7 +61,6 @@ local THEMES = {
 		logoBot  = Color3.fromRGB(20,  70,  150),
 	},
 
-	-- ── Christmas (red & green) ──────────────────
 	Christmas = {
 		black    = Color3.fromRGB(0,   0,   0  ),
 		bg       = Color3.fromRGB(10,  30,  14 ),
@@ -100,7 +77,6 @@ local THEMES = {
 		logoBot  = Color3.fromRGB(10,  80,  30 ),
 	},
 
-	-- ── Easter (pastel purple & yellow) ─────────
 	Easter = {
 		black    = Color3.fromRGB(40,  0,   60 ),
 		bg       = Color3.fromRGB(42,  18,  60 ),
@@ -117,7 +93,6 @@ local THEMES = {
 		logoBot  = Color3.fromRGB(100, 50,  160),
 	},
 
-	-- ── Blood (dark crimson) ─────────────────────
 	Blood = {
 		black    = Color3.fromRGB(0,   0,   0  ),
 		bg       = Color3.fromRGB(14,  4,   4  ),
@@ -134,7 +109,6 @@ local THEMES = {
 		logoBot  = Color3.fromRGB(60,  0,   0  ),
 	},
 
-	-- ── Camo (military green) ────────────────────
 	Camo = {
 		black    = Color3.fromRGB(0,   0,   0  ),
 		bg       = Color3.fromRGB(26,  30,  16 ),
@@ -151,7 +125,6 @@ local THEMES = {
 		logoBot  = Color3.fromRGB(50,  70,  20 ),
 	},
 
-	-- ── Ocean (teal-blue water) ──────────────────
 	OceanBlue = {
 		black    = Color3.fromRGB(0,   10,  20 ),
 		bg       = Color3.fromRGB(10,  30,  50 ),
@@ -168,7 +141,6 @@ local THEMES = {
 		logoBot  = Color3.fromRGB(0,   80,  120),
 	},
 
-	-- ── Neon (cyberpunk purple/pink) ─────────────
 	Neon = {
 		black    = Color3.fromRGB(0,   0,   0  ),
 		bg       = Color3.fromRGB(8,   6,   18 ),
@@ -185,7 +157,6 @@ local THEMES = {
 		logoBot  = Color3.fromRGB(60,  0,   120),
 	},
 
-	-- ── Midnight (deep navy) ─────────────────────
 	Midnight = {
 		black    = Color3.fromRGB(0,   0,   8  ),
 		bg       = Color3.fromRGB(6,   6,   20 ),
@@ -202,7 +173,6 @@ local THEMES = {
 		logoBot  = Color3.fromRGB(40,  40,  120),
 	},
 
-	-- ── Rose Gold ────────────────────────────────
 	RoseGold = {
 		black    = Color3.fromRGB(20,  8,   12 ),
 		bg       = Color3.fromRGB(32,  16,  20 ),
@@ -219,7 +189,6 @@ local THEMES = {
 		logoBot  = Color3.fromRGB(120, 50,  60 ),
 	},
 
-	-- ── White / Light theme ──────────────────────
 	Light = {
 		black    = Color3.fromRGB(220, 220, 220),
 		bg       = Color3.fromRGB(245, 245, 248),
@@ -237,52 +206,41 @@ local THEMES = {
 	},
 }
 
--- Active theme palette (defaults to Ocean)
-local _activeThemeName = "Ocean"
+local activeThemeName = "Ocean"
 local K = {}
-for k, v in pairs(THEMES.Ocean) do K[k] = v end
-
-local OceanUI = {}
-
--- List of all available theme names
-OceanUI.ThemeNames = {}
-for name in pairs(THEMES) do
-	table.insert(OceanUI.ThemeNames, name)
-end
-table.sort(OceanUI.ThemeNames)
-
--- Expose raw theme table for custom theme creation
-OceanUI.Themes = THEMES
-
--- Apply a theme by name. Returns true on success, false if unknown theme.
-function OceanUI:SetTheme(name)
-	local t = THEMES[name]
-	if not t then return false end
-	_activeThemeName = name
-	for k, v in pairs(t) do K[k] = v end
-	return true
+for k, v in pairs(THEMES.Ocean) do
+	K[k] = v
 end
 
--- Add or override a custom theme at runtime.
--- Usage: OceanUI:RegisterTheme("MyTheme", { bg = Color3.fromRGB(...), ... })
-function OceanUI:RegisterTheme(name, palette)
-	if type(name) ~= "string" or type(palette) ~= "table" then return end
-	-- Fill missing keys from Ocean base
-	local base = THEMES.Ocean
-	local full = {}
-	for k, v in pairs(base) do
-		full[k] = palette[k] or v
+local themeUpdaters = {}
+local function registerThemeUpdater(callback, targetInstance)
+	table.insert(themeUpdaters, {cb = callback, target = targetInstance})
+	pcall(callback)
+end
+
+local function setTheme(themeName)
+	if not THEMES[themeName] then return end
+	activeThemeName = themeName
+	local theme = THEMES[themeName]
+	for k, v in pairs(theme) do
+		K[k] = v
 	end
-	THEMES[name] = full
-	-- Rebuild sorted name list
-	OceanUI.ThemeNames = {}
-	for n in pairs(THEMES) do table.insert(OceanUI.ThemeNames, n) end
-	table.sort(OceanUI.ThemeNames)
+	
+	local activeUpdaters = {}
+	for _, item in ipairs(themeUpdaters) do
+		local keep = true
+		if item.target then
+			if not item.target.Parent then
+				keep = false
+			end
+		end
+		if keep then
+			table.insert(activeUpdaters, item)
+			pcall(item.cb)
+		end
+	end
+	themeUpdaters = activeUpdaters
 end
-
--- ══════════════════════════════════════════════
---           END OF THEME SYSTEM
--- ══════════════════════════════════════════════
 
 local function inst(cls, props, parent)
 	local o = Instance.new(cls)
@@ -301,13 +259,6 @@ local function rnd(p, r)
 	return inst("UICorner",{CornerRadius=UDim.new(0,r or CORNER)},p)
 end
 
-local function brd(p, col, thick)
-	return inst("UIStroke",{
-		Color=col or K.border, Thickness=thick or 1,
-		ApplyStrokeMode=Enum.ApplyStrokeMode.Border,
-	},p)
-end
-
 local function pad(p,l,r,t,b)
 	return inst("UIPadding",{
 		PaddingLeft=UDim.new(0,l or 0), PaddingRight=UDim.new(0,r or 0),
@@ -315,9 +266,37 @@ local function pad(p,l,r,t,b)
 	},p)
 end
 
+local function brd(p, col, thick)
+	local colorKey = "border"
+	local color = col
+	if typeof(col) == "string" then
+		colorKey = col
+		color = nil
+	end
+	local stroke = inst("UIStroke",{
+		Color=color or K[colorKey] or K.border, Thickness=thick or 1,
+		ApplyStrokeMode=Enum.ApplyStrokeMode.Border,
+	},p)
+	if not color then
+		registerThemeUpdater(function()
+			stroke.Color = K[colorKey]
+		end, stroke)
+	end
+	return stroke
+end
+
 local function frame(parent, p)
-	return inst("Frame",{
-		BackgroundColor3       = p.color  or K.surface,
+	local colorKey = p.colorKey
+	local color = p.color
+	if typeof(color) == "string" then
+		colorKey = color
+		color = nil
+	end
+	if not color and not colorKey and p.trans ~= 1 then
+		colorKey = "surface"
+	end
+	local f = inst("Frame",{
+		BackgroundColor3       = color or (colorKey and K[colorKey]) or K.surface,
 		BackgroundTransparency = p.trans  or 0,
 		BorderSizePixel        = 0,
 		Size                   = p.size   or UDim2.fromScale(1,1),
@@ -327,14 +306,29 @@ local function frame(parent, p)
 		ZIndex                 = p.z      or 1,
 		ClipsDescendants       = p.clip   or false,
 	}, parent)
+	if colorKey then
+		registerThemeUpdater(function()
+			f.BackgroundColor3 = K[colorKey]
+		end, f)
+	end
+	return f
 end
 
 local function lbl(parent, p)
-	return inst("TextLabel",{
+	local colorKey = p.colorKey
+	local color = p.color
+	if typeof(color) == "string" then
+		colorKey = color
+		color = nil
+	end
+	if not color and not colorKey then
+		colorKey = "text"
+	end
+	local l = inst("TextLabel",{
 		BackgroundTransparency = 1,
 		Font                   = p.font   or Enum.Font.GothamMedium,
 		Text                   = p.text   or "",
-		TextColor3             = p.color  or K.text,
+		TextColor3             = color or K[colorKey] or K.text,
 		TextSize               = p.size   or 14,
 		TextXAlignment         = p.xa     or Enum.TextXAlignment.Left,
 		TextYAlignment         = p.ya     or Enum.TextYAlignment.Center,
@@ -346,16 +340,40 @@ local function lbl(parent, p)
 		Name                   = p.name   or "Lbl",
 		ZIndex                 = p.z      or 2,
 	}, parent)
+	if colorKey then
+		registerThemeUpdater(function()
+			l.TextColor3 = K[colorKey]
+		end, l)
+	end
+	return l
 end
 
 local function btn(parent, p)
-	return inst("TextButton",{
-		BackgroundColor3       = p.color  or K.raised,
+	local colorKey = p.colorKey
+	local color = p.color
+	if typeof(color) == "string" then
+		colorKey = color
+		color = nil
+	end
+	local tcKey = p.tcKey
+	local tc = p.tc
+	if typeof(tc) == "string" then
+		tcKey = tc
+		tc = nil
+	end
+	if not color and not colorKey then
+		colorKey = "raised"
+	end
+	if not tc and not tcKey then
+		tcKey = "text"
+	end
+	local b = inst("TextButton",{
+		BackgroundColor3       = color or K[colorKey] or K.raised,
 		BackgroundTransparency = p.trans  or 0,
 		BorderSizePixel        = 0,
 		Font                   = p.font   or Enum.Font.GothamMedium,
 		Text                   = p.text   or "",
-		TextColor3             = p.tc     or K.text,
+		TextColor3             = tc or K[tcKey] or K.text,
 		TextSize               = p.size   or 14,
 		TextXAlignment         = p.xa     or Enum.TextXAlignment.Center,
 		AutoButtonColor        = false,
@@ -365,13 +383,31 @@ local function btn(parent, p)
 		Name                   = p.name   or "Btn",
 		ZIndex                 = p.z      or 3,
 	}, parent)
+	registerThemeUpdater(function()
+		local activeColorKey = b:GetAttribute("colorKey") or colorKey
+		local activeTcKey = b:GetAttribute("tcKey") or tcKey
+		if not b:GetAttribute("Hovered") then
+			b.BackgroundColor3 = K[activeColorKey]
+			b.TextColor3 = K[activeTcKey]
+		end
+	end, b)
+	return b
 end
 
 local function img(parent, p)
-	return inst("ImageLabel",{
+	local colorKey = p.colorKey
+	local color = p.color
+	if typeof(color) == "string" then
+		colorKey = color
+		color = nil
+	end
+	if not color and not colorKey then
+		colorKey = "text"
+	end
+	local i = inst("ImageLabel",{
 		BackgroundTransparency = 1,
 		Image                  = p.img    or "",
-		ImageColor3            = p.color  or K.text,
+		ImageColor3            = color or K[colorKey] or K.text,
 		Size                   = p.sz     or UDim2.fromScale(1,1),
 		Position               = p.pos    or UDim2.fromScale(0,0),
 		AnchorPoint            = p.anchor or Vector2.zero,
@@ -379,6 +415,12 @@ local function img(parent, p)
 		ZIndex                 = p.z      or 2,
 		ScaleType              = Enum.ScaleType.Fit,
 	}, parent)
+	if colorKey then
+		registerThemeUpdater(function()
+			i.ImageColor3 = K[colorKey]
+		end, i)
+	end
+	return i
 end
 
 local function makeToggle(parent, initialState)
@@ -392,7 +434,7 @@ local function makeToggle(parent, initialState)
 		z=5,
 	})
 	rnd(track, 99)
-	brd(track, K.border, 1)
+	brd(track, "border", 1)
 
 	local knob = frame(track,{
 		name="Knob", color=K.white,
@@ -420,7 +462,9 @@ local function makeToggle(parent, initialState)
 		end
 	end
 
-	update(state, false)
+	registerThemeUpdater(function()
+		update(state, false)
+	end, track)
 
 	local tb = inst("TextButton",{
 		BackgroundTransparency=1, Text="",
@@ -448,20 +492,20 @@ local function makeSlider(parent, minV, maxV, defaultV)
 	})
 
 	local track = frame(wrap,{
-		name="Track", color=K.border,
+		name="Track", colorKey="border",
 		size=UDim2.new(1,-KNOB_S,0,TRACK_H),
 		pos=UDim2.new(0,KNOB_S/2,0.5,0), anchor=Vector2.new(0,0.5), z=5,
 	})
 	rnd(track,99)
 
 	local fill = frame(track,{
-		name="Fill", color=K.white,
+		name="Fill", colorKey="white",
 		size=UDim2.new(0,0,1,0), clip=false, z=6,
 	})
 	rnd(fill,99)
 
 	local knobF = frame(track,{
-		name="Knob", color=K.white,
+		name="Knob", colorKey="white",
 		size=UDim2.new(0,KNOB_S,0,KNOB_S),
 		pos=UDim2.new(0,0,0.5,0), anchor=Vector2.new(0.5,0.5), z=7,
 	})
@@ -552,29 +596,28 @@ local function makeDropdown(parent, options, defaultIdx, onOpenStart)
 	LIST_W = calcWidth(options)
 
 	local wrap = frame(parent,{
-		name="DropdownWrap", color=K.bg, trans=1,
+		name="DropdownWrap", colorKey="bg", trans=1,
 		size=UDim2.new(0,LIST_W,0,DROP_H), z=10,
 	})
 
-	-- Header button
 	local header = btn(wrap,{
 		name="DHead", text=selected, font=Enum.Font.GothamMedium, size=13,
-		color=K.raised, tc=K.text,
+		colorKey="raised", tcKey="text",
 		sz=UDim2.new(1,0,0,DROP_H), z=11,
 	})
 	header.TextTruncate = Enum.TextTruncate.AtEnd
 	rnd(header,5)
-	brd(header,K.border,1)
+	brd(header,"border",1)
 
 	local arrow
 	if lucide then
 		arrow = img(header,{
 			name="Arr", img=getLucide("chevron-down", 16),
-			color=K.sub, sz=UDim2.new(0,16,0,16), pos=UDim2.new(1,-24,0.5,0), anchor=Vector2.new(0,0.5), z=12,
+			colorKey="sub", sz=UDim2.new(0,16,0,16), pos=UDim2.new(1,-24,0.5,0), anchor=Vector2.new(0,0.5), z=12,
 		})
 	else
 		arrow = lbl(header,{
-			text="v", font=Enum.Font.GothamBold, size=12, color=K.sub,
+			text="v", font=Enum.Font.GothamBold, size=12, colorKey="sub",
 			sz=UDim2.new(0,20,1,0), pos=UDim2.new(1,-20,0,0), z=12,
 			xa=Enum.TextXAlignment.Center,
 		})
@@ -589,6 +632,10 @@ local function makeDropdown(parent, options, defaultIdx, onOpenStart)
 		ScrollingDirection=Enum.ScrollingDirection.Y,
 		CanvasSize=UDim2.new(0,0,0,0), AutomaticCanvasSize=Enum.AutomaticSize.Y
 	}, wrap)
+	registerThemeUpdater(function()
+		listFrame.BackgroundColor3 = K.raised
+		listFrame.ScrollBarImageColor3 = K.border
+	end, listFrame)
 	
 	local function setScrollPadding(extra)
 		local scroll = parent:FindFirstAncestorOfClass("ScrollingFrame")
@@ -607,7 +654,7 @@ local function makeDropdown(parent, options, defaultIdx, onOpenStart)
 	end)
 
 	rnd(listFrame,5)
-	brd(listFrame,K.border,1)
+	brd(listFrame,"border",1)
 	listFrame.Visible = false
 
 	inst("UIListLayout",{
@@ -633,14 +680,20 @@ local function makeDropdown(parent, options, defaultIdx, onOpenStart)
 		for i, opt in ipairs(options) do
 			local ob = btn(listFrame,{
 				name="Opt_"..opt, text=opt, font=Enum.Font.GothamMedium, size=13,
-				color=K.raised, tc=K.sub,
+				colorKey="raised", tcKey="sub",
 				sz=UDim2.new(1,0,0,30), z=listZ+1,
 				xa=Enum.TextXAlignment.Left,
 			})
 			pad(ob,10,0,0,0)
 			ob.LayoutOrder = i
-			ob.MouseEnter:Connect(function() tw(ob,{BackgroundColor3=K.border,TextColor3=K.white},0.08):Play() end)
-			ob.MouseLeave:Connect(function() tw(ob,{BackgroundColor3=K.raised,TextColor3=K.sub},0.08):Play() end)
+			ob.MouseEnter:Connect(function()
+				ob:SetAttribute("Hovered", true)
+				tw(ob,{BackgroundColor3=K.border,TextColor3=K.white},0.08):Play()
+			end)
+			ob.MouseLeave:Connect(function()
+				ob:SetAttribute("Hovered", false)
+				tw(ob,{BackgroundColor3=K.raised,TextColor3=K.sub},0.08):Play()
+			end)
 			ob.MouseButton1Click:Connect(function()
 				selected = opt
 				header.Text = opt
@@ -757,29 +810,28 @@ local function makeMultiDropdown(parent, options, defaultSelected, onOpenStart)
 	LIST_W = calcWidth(options)
 
 	local wrap = frame(parent,{
-		name="DropdownWrap", color=K.bg, trans=1,
+		name="DropdownWrap", colorKey="bg", trans=1,
 		size=UDim2.new(0,LIST_W,0,DROP_H), z=10,
 	})
 
-	-- Header button
 	local header = btn(wrap,{
 		name="DHead", text=getHeaderText(), font=Enum.Font.GothamMedium, size=13,
-		color=K.raised, tc=K.text,
+		colorKey="raised", tcKey="text",
 		sz=UDim2.new(1,0,0,DROP_H), z=11,
 	})
 	header.TextTruncate = Enum.TextTruncate.AtEnd
 	rnd(header,5)
-	brd(header,K.border,1)
+	brd(header,"border",1)
 
 	local arrow
 	if lucide then
 		arrow = img(header,{
 			name="Arr", img=getLucide("chevron-down", 16),
-			color=K.sub, sz=UDim2.new(0,16,0,16), pos=UDim2.new(1,-24,0.5,0), anchor=Vector2.new(0,0.5), z=12,
+			colorKey="sub", sz=UDim2.new(0,16,0,16), pos=UDim2.new(1,-24,0.5,0), anchor=Vector2.new(0,0.5), z=12,
 		})
 	else
 		arrow = lbl(header,{
-			text="v", font=Enum.Font.GothamBold, size=12, color=K.sub,
+			text="v", font=Enum.Font.GothamBold, size=12, colorKey="sub",
 			sz=UDim2.new(0,20,1,0), pos=UDim2.new(1,-20,0,0), z=12,
 			xa=Enum.TextXAlignment.Center,
 		})
@@ -794,6 +846,10 @@ local function makeMultiDropdown(parent, options, defaultSelected, onOpenStart)
 		ScrollingDirection=Enum.ScrollingDirection.Y,
 		CanvasSize=UDim2.new(0,0,0,0), AutomaticCanvasSize=Enum.AutomaticSize.Y
 	}, wrap)
+	registerThemeUpdater(function()
+		listFrame.BackgroundColor3 = K.raised
+		listFrame.ScrollBarImageColor3 = K.border
+	end, listFrame)
 	
 	local function setScrollPadding(extra)
 		local scroll = parent:FindFirstAncestorOfClass("ScrollingFrame")
@@ -812,7 +868,7 @@ local function makeMultiDropdown(parent, options, defaultSelected, onOpenStart)
 	end)
 
 	rnd(listFrame,5)
-	brd(listFrame,K.border,1)
+	brd(listFrame,"border",1)
 	listFrame.Visible = false
 
 	inst("UIListLayout",{
@@ -839,25 +895,33 @@ local function makeMultiDropdown(parent, options, defaultSelected, onOpenStart)
 			local isSel = not not selected[opt]
 			local ob = btn(listFrame,{
 				name="Opt_"..opt, text=opt, font=Enum.Font.GothamMedium, size=13,
-				color=K.raised, tc=isSel and K.white or K.sub,
+				colorKey="raised", tcKey=isSel and "white" or "sub",
 				sz=UDim2.new(1,0,0,30), z=listZ+1,
 				xa=Enum.TextXAlignment.Left,
 			})
+			ob:SetAttribute("tcKey", isSel and "white" or "sub")
 			pad(ob,10,0,0,0)
 			ob.LayoutOrder = i
 
 			local check = lbl(ob, {
-				name = "Check", text = "✓", font = Enum.Font.GothamBold, size = 12, color = K.white,
+				name = "Check", text = "✓", font = Enum.Font.GothamBold, size = 12, colorKey = "white",
 				sz = UDim2.new(0, 20, 1, 0), pos = UDim2.new(1, -24, 0, 0), z = listZ + 2,
 				xa = Enum.TextXAlignment.Right,
 			})
 			check.Visible = isSel
 
-			ob.MouseEnter:Connect(function() tw(ob,{BackgroundColor3=K.border},0.08):Play() end)
-			ob.MouseLeave:Connect(function() tw(ob,{BackgroundColor3=K.raised},0.08):Play() end)
+			ob.MouseEnter:Connect(function()
+				ob:SetAttribute("Hovered", true)
+				tw(ob,{BackgroundColor3=K.border},0.08):Play()
+			end)
+			ob.MouseLeave:Connect(function()
+				ob:SetAttribute("Hovered", false)
+				tw(ob,{BackgroundColor3=K.raised},0.08):Play()
+			end)
 			ob.MouseButton1Click:Connect(function()
 				selected[opt] = not selected[opt]
 				check.Visible = not not selected[opt]
+				ob:SetAttribute("tcKey", selected[opt] and "white" or "sub")
 				ob.TextColor3 = selected[opt] and K.white or K.sub
 				header.Text = getHeaderText()
 				changedEvent:Fire(selected)
@@ -951,7 +1015,7 @@ local function makeTextBox(parent, placeholder, defaultText)
 		ZIndex = 10,
 	}, parent)
 	rnd(box,5)
-	brd(box,K.border,1)
+	brd(box,"border",1)
 	pad(box,8,8,0,0)
 
 	box.Focused:Connect(function()
@@ -961,6 +1025,12 @@ local function makeTextBox(parent, placeholder, defaultText)
 		tw(box,{BackgroundColor3=K.raised},0.1):Play()
 		changedEvent:Fire(box.Text, enterPressed)
 	end)
+
+	registerThemeUpdater(function()
+		box.BackgroundColor3 = K.raised
+		box.PlaceholderColor3 = K.muted
+		box.TextColor3 = K.text
+	end, box)
 
 	return {
 		frame = box,
@@ -978,7 +1048,7 @@ local function makeColorPicker(parent, defaultColor, onOpenStart)
 
 	local PICKER_H = 34
 	local wrap = frame(parent, {
-		name="CPWrap", color=K.bg, trans=1,
+		name="CPWrap", colorKey="bg", trans=1,
 		size=UDim2.new(0, 60, 0, PICKER_H), z=10,
 	})
 
@@ -987,10 +1057,10 @@ local function makeColorPicker(parent, defaultColor, onOpenStart)
 		sz=UDim2.new(1,0,0,26), pos=UDim2.new(0,0,0.5,0), anchor=Vector2.new(0,0.5), z=11, 
 	})
 	rnd(preview, 5)
-	brd(preview, K.border, 1)
+	brd(preview, "border", 1)
 
 	local panel = frame(wrap, {
-		name="Panel", color=K.surface,
+		name="Panel", colorKey="surface",
 		size=UDim2.new(0, 180, 0, 160), pos=UDim2.new(0, -120, 0, PICKER_H + 2), z=150,
 	})
 	
@@ -1011,7 +1081,7 @@ local function makeColorPicker(parent, defaultColor, onOpenStart)
 	end)
 
 	rnd(panel, 5)
-	brd(panel, K.border, 1)
+	brd(panel, "border", 1)
 	panel.Visible = false
 
 	local svMap = inst("TextButton", {
@@ -1020,22 +1090,22 @@ local function makeColorPicker(parent, defaultColor, onOpenStart)
 	}, panel)
 	rnd(svMap, 4)
 	
-	local wg = frame(svMap, { name="WhiteGrad", size=UDim2.fromScale(1,1), color=K.white, z=102 })
+	local wg = frame(svMap, { name="WhiteGrad", size=UDim2.fromScale(1,1), color=Color3.new(1,1,1), z=102 })
 	rnd(wg, 4)
-	inst("UIGradient", { Color=ColorSequence.new(K.white), Transparency=NumberSequence.new{ NumberSequenceKeypoint.new(0,0), NumberSequenceKeypoint.new(1,1) } }, wg)
+	inst("UIGradient", { Color=ColorSequence.new(Color3.new(1,1,1)), Transparency=NumberSequence.new{ NumberSequenceKeypoint.new(0,0), NumberSequenceKeypoint.new(1,1) } }, wg)
 	
-	local bg = frame(svMap, { name="BlackGrad", size=UDim2.fromScale(1,1), color=K.black, z=103 })
+	local bg = frame(svMap, { name="BlackGrad", size=UDim2.fromScale(1,1), color=Color3.new(0,0,0), z=103 })
 	rnd(bg, 4)
-	inst("UIGradient", { Color=ColorSequence.new(K.black), Rotation=90, Transparency=NumberSequence.new{ NumberSequenceKeypoint.new(0,1), NumberSequenceKeypoint.new(1,0) } }, bg)
+	inst("UIGradient", { Color=ColorSequence.new(Color3.new(0,0,0)), Rotation=90, Transparency=NumberSequence.new{ NumberSequenceKeypoint.new(0,1), NumberSequenceKeypoint.new(1,0) } }, bg)
 
 	local svCursor = frame(bg, {
-		size=UDim2.new(0,8,0,8), color=K.white, anchor=Vector2.new(0.5,0.5), pos=UDim2.new(s,0,1-v,0), z=105
+		size=UDim2.new(0,8,0,8), color=Color3.new(1,1,1), anchor=Vector2.new(0.5,0.5), pos=UDim2.new(s,0,1-v,0), z=105
 	})
 	rnd(svCursor, 99)
-	brd(svCursor, K.black, 1)
+	brd(svCursor, Color3.new(0,0,0), 1)
 
 	local hueTrack = inst("TextButton", {
-		Name="HueTrack", BackgroundColor3=K.white, Text="",
+		Name="HueTrack", BackgroundColor3=Color3.new(1,1,1), Text="",
 		Size=UDim2.new(1, -16, 0, 14), Position=UDim2.new(0, 8, 0, 116), ZIndex=101, AutoButtonColor=false,
 	}, panel)
 	rnd(hueTrack, 4)
@@ -1049,9 +1119,9 @@ local function makeColorPicker(parent, defaultColor, onOpenStart)
 	inst("UIGradient", {Color=rainbow}, hueTrack)
 	
 	local hCursor = frame(hueTrack, {
-		size=UDim2.new(0,4,1,4), pos=UDim2.new(h,0,0.5,0), anchor=Vector2.new(0.5,0.5), color=K.white, z=105
+		size=UDim2.new(0,4,1,4), pos=UDim2.new(h,0,0.5,0), anchor=Vector2.new(0.5,0.5), color=Color3.new(1,1,1), z=105
 	})
-	brd(hCursor, K.black, 1)
+	brd(hCursor, Color3.new(0,0,0), 1)
 	
 	local function updateColor(silence)
 		col = Color3.fromHSV(h, s, v)
@@ -1117,12 +1187,16 @@ local function makeColorPicker(parent, defaultColor, onOpenStart)
 	end)
 	
 	local hexBox = inst("TextBox", {
-		BackgroundColor3 = K.surface, BorderSizePixel=0, TextColor3=K.white,
+		BackgroundColor3 = K.surface, BorderSizePixel=0, TextColor3=K.text,
 		Font = Enum.Font.Code, TextSize=11, Size=UDim2.new(1,-16,0,20),
 		Position=UDim2.new(0,8,0,134), ZIndex=101, ClearTextOnFocus=false
 	}, panel)
 	rnd(hexBox, 4)
-	brd(hexBox, K.border, 1)
+	brd(hexBox, "border", 1)
+	registerThemeUpdater(function()
+		hexBox.BackgroundColor3 = K.surface
+		hexBox.TextColor3 = K.text
+	end, hexBox)
 	
 	local function updateHex()
 		hexBox.Text = string.format("#%02X%02X%02X", math.floor(col.R*255+0.5), math.floor(col.G*255+0.5), math.floor(col.B*255+0.5))
@@ -1145,18 +1219,25 @@ local function makeColorPicker(parent, defaultColor, onOpenStart)
 end
 
 
+local OceanUI = {}
+OceanUI.Themes = THEMES
+
+function OceanUI:SetTheme(name)
+	setTheme(name)
+end
+
+function OceanUI:GetTheme()
+	return activeThemeName
+end
+
 function OceanUI:CreateWindow(config)
 	config = config or {}
-
-	-- Apply theme from config if provided (before building any UI)
 	if config.Theme and THEMES[config.Theme] then
-		OceanUI:SetTheme(config.Theme)
+		setTheme(config.Theme)
 	end
-
 	local allDropdownClosers = {}
 	local MOBILE = isMobile()
 	local vp = camera.ViewportSize
-	-- Always adapt to viewport. On small screens scale everything down proportionally.
 	local WIN_W, WIN_H
 	if MOBILE then
 		WIN_W = math.min(vp.X - 20, 680)
@@ -1165,11 +1246,9 @@ function OceanUI:CreateWindow(config)
 		WIN_W  = config.Size and math.clamp(config.Size[1], 200, vp.X - 20) or math.min(vp.X - 20, 680)
 		WIN_H  = config.Size and math.clamp(config.Size[2], 200, vp.Y - 40) or math.min(vp.Y - 40, 420)
 	end
-	-- Sidebar shrinks on narrow windows so content always has room
 	local SIDE_W = math.clamp(math.floor(WIN_W * 0.25), 90, 170)
 	local TITLE  = config.Title or "Ocean"
 
-	-- Destroy previous instance
 	local existing = CoreGui:FindFirstChild("OceanUI")
 	if existing then existing:Destroy() end
 
@@ -1181,38 +1260,39 @@ function OceanUI:CreateWindow(config)
 	}, CoreGui)
 
 	local win = frame(sg,{
-		name="Win", color=K.bg,
+		name="Win", colorKey="bg",
 		size=UDim2.new(0,WIN_W,0,0),
 		pos=UDim2.new(0.5,0,0.5,0), anchor=Vector2.new(0.5,0.5),
 		z=2,
 	})
-	brd(win, K.border, 1)
+	brd(win, "border", 1)
 	rnd(win, 10)
 
 	local outerGlow = frame(win,{
-		name="OuterGlow", color=K.white, trans=0.93,
+		name="OuterGlow", colorKey="white", trans=0.93,
 		size=UDim2.new(1,10,1,10), pos=UDim2.new(0,-5,0,-5),
 		z=1,
 	})
 	rnd(outerGlow, 14)
 
-	-- Resize pill: bottom-right corner, rounded, visible drag handle
 	local minWinW, minWinH = WIN_W, WIN_H
 	local maxWinW, maxWinH = 900, 700
 
-	-- Resize handle: bottom-right curve outside the window
 	local resizeHandle = frame(win,{
-		name="ResizeHandle", color=K.white, trans=1,
+		name="ResizeHandle", colorKey="white", trans=1,
 		size=UDim2.new(0,26,0,26),
 		pos=UDim2.new(1, -5, 1, -5), anchor=Vector2.new(0,0),
 		z=20, clip=true,
 	})
 	local resizeCurve = frame(resizeHandle,{
-		name="Curve", color=K.bg, trans=1,
+		name="Curve", colorKey="bg", trans=1,
 		size=UDim2.new(0,36,0,36), pos=UDim2.new(0,-18,0,-18), z=20,
 	})
 	rnd(resizeCurve, 99)
 	local resizeStrk = inst("UIStroke", {Color=K.white, Thickness=3, Transparency=0.62}, resizeCurve)
+	registerThemeUpdater(function()
+		resizeStrk.Color = K.white
+	end, resizeStrk)
 
 	local resizeBtn = inst("TextButton",{
 		BackgroundTransparency=1, Text="",
@@ -1262,12 +1342,11 @@ function OceanUI:CreateWindow(config)
 		end)
 	end
 
-	-- LOADING SCREEN
-	local loadLayer = frame(win,{name="Load", color=K.bg, z=30, clip=true})
+	local loadLayer = frame(win,{name="Load", colorKey="bg", z=30, clip=true})
 	rnd(loadLayer, 10)
 
 	local logoWrap = frame(loadLayer,{
-		name="LW", color=K.bg, trans=1,
+		name="LW", colorKey="bg", trans=1,
 		size=UDim2.new(0,260,0,80),
 		pos=UDim2.new(0.5,0,0.5,-12), anchor=Vector2.new(0.5,0.5), z=31,
 	})
@@ -1280,7 +1359,7 @@ function OceanUI:CreateWindow(config)
 
 	local CHARS = {
 		{"}",74,-4,44}, {"<",67,0,38}, {"(",67,-5,34},
-		{"(",67,-5,34}, {"(",67,-5,34}, {"*",40,-14,26}, {">",67,0,38},
+		{"(",67,-5,34}, {"°",54,-1,30}, {">",67,0,38},
 	}
 	local logoGrad = ColorSequence.new({
 		ColorSequenceKeypoint.new(0,   K.logoTop),
@@ -1290,24 +1369,31 @@ function OceanUI:CreateWindow(config)
 	local charDefs={}
 	for i,d in ipairs(CHARS) do
 		local ch,fs,yo,w=d[1],d[2],d[3],d[4]
-		local cf=frame(logoWrap,{name="cf"..i,color=K.bg,trans=1,size=UDim2.new(0,w,0,80),z=32})
+		local cf=frame(logoWrap,{name="cf"..i,colorKey="bg",trans=1,size=UDim2.new(0,w,0,80),z=32})
 		local cl=lbl(cf,{
-			text=ch,font=Enum.Font.Code,size=fs,color=K.logoTop,trans=1,
+			text=ch,font=Enum.Font.Code,size=fs,colorKey="logoTop",trans=1,
 			sz=UDim2.new(0,100,0,80),pos=UDim2.new(0.5,0,0.5,yo),anchor=Vector2.new(0.5,0.5),
 			xa=Enum.TextXAlignment.Center,ya=Enum.TextYAlignment.Center,z=32,
 		})
-		inst("UIGradient",{Rotation=90,Color=logoGrad},cl)
+		local grad = inst("UIGradient",{Rotation=90,Color=logoGrad},cl)
+		registerThemeUpdater(function()
+			grad.Color = ColorSequence.new({
+				ColorSequenceKeypoint.new(0,   K.logoTop),
+				ColorSequenceKeypoint.new(0.45,K.logoMid),
+				ColorSequenceKeypoint.new(1,   K.logoBot),
+			})
+		end, grad)
 		charDefs[i]={label=cl,yo=yo}
 	end
 
 	local loadSub=lbl(loadLayer,{
 		text="OCEAN  DEVELOPMENT",font=Enum.Font.Gotham,
-		size=12,color=K.muted,trans=1,
+		size=12,colorKey="muted",trans=1,
 		sz=UDim2.new(0,260,0,18),pos=UDim2.new(0.5,0,0.5,36),anchor=Vector2.new(0.5,0),
 		xa=Enum.TextXAlignment.Center,z=32,
 	})
 
-	local shimF=frame(loadLayer,{name="Shim",color=K.white,trans=1,z=35})
+	local shimF=frame(loadLayer,{name="Shim",colorKey="white",trans=1,z=35})
 	local shimG=inst("UIGradient",{
 		Rotation=45,
 		Transparency=NumberSequence.new({
@@ -1319,27 +1405,25 @@ function OceanUI:CreateWindow(config)
 
 	local body -- forward declaration so minimize handler can access it
 
-	-- TITLEBAR
 	local titlebar = frame(win,{
-		name="Titlebar", color=K.bg,
+		name="Titlebar", colorKey="bg",
 		size=UDim2.new(1,0,0,38), z=5,
 	})
 	rnd(titlebar, 10)
 	titlebar.Visible = false
 
 	frame(titlebar,{
-		name="Div", color=K.border,
+		name="Div", colorKey="border",
 		size=UDim2.new(1,0,0,1), pos=UDim2.new(0,0,1,-1), z=6,
 	})
 
-	-- Title
 	local titleLbl = lbl(titlebar,{
-		text=TITLE, font=Enum.Font.GothamBold, size=16, color=K.white,
+		text=TITLE, font=Enum.Font.GothamBold, size=16, colorKey="white",
 		sz=UDim2.new(0,200,1,0), pos=UDim2.new(0,16,0,0), z=6,
 	})
 
 	local tagContainer = frame(titlebar,{
-		name="TagContainer", color=K.bg, trans=1,
+		name="TagContainer", colorKey="bg", trans=1,
 		size=UDim2.new(0,300,1,0),
 		pos=UDim2.new(0, SIDE_W + 16, 0, 0), z=6,
 	})
@@ -1351,7 +1435,7 @@ function OceanUI:CreateWindow(config)
 	},tagContainer)
 
 	local ctrlFrame = frame(titlebar,{
-		name="Controls", color=K.bg, trans=1,
+		name="Controls", colorKey="bg", trans=1,
 		size=UDim2.new(0,80,0,32),
 		pos=UDim2.new(1,-10,0.5,0), anchor=Vector2.new(1,0.5), z=6,
 	})
@@ -1364,20 +1448,24 @@ function OceanUI:CreateWindow(config)
 	},ctrlFrame)
 
 	local function makeCtrlBtn(iconName, name, isClose)
-		local b = inst("TextButton",{
-			BackgroundColor3 = K.raised, BackgroundTransparency = 1, BorderSizePixel=0,
-			Text="", Size=UDim2.new(0,30,0,30), ZIndex=7, AutoButtonColor=false, Name=name
-		}, ctrlFrame)
-		rnd(b,6)
+		local b = btn(ctrlFrame, {
+			name=name, colorKey="raised", trans=1,
+			sz=UDim2.new(0,30,0,30), z=7,
+		})
+		rnd(b, 6)
+		b:SetAttribute("colorKey", "raised")
+		b:SetAttribute("tcKey", "text")
 		local ic = img(b,{
 			name="Icon", img=getLucide(iconName, 18),
-			color=K.sub, sz=UDim2.new(0,19,0,19), pos=UDim2.new(0.5,0,0.5,0), anchor=Vector2.new(0.5,0.5), z=8
+			colorKey="sub", sz=UDim2.new(0,19,0,19), pos=UDim2.new(0.5,0,0.5,0), anchor=Vector2.new(0.5,0.5), z=8
 		})
 		b.MouseEnter:Connect(function() 
+			b:SetAttribute("Hovered", true)
 			tw(b,{BackgroundTransparency=0, BackgroundColor3=isClose and Color3.fromRGB(220,60,60) or K.border},0.1):Play() 
 			tw(ic,{ImageColor3=K.white},0.1):Play()
 		end)
 		b.MouseLeave:Connect(function() 
+			b:SetAttribute("Hovered", false)
 			tw(b,{BackgroundTransparency=1, BackgroundColor3=K.raised},0.1):Play() 
 			tw(ic,{ImageColor3=K.sub},0.1):Play()
 		end)
@@ -1386,26 +1474,40 @@ function OceanUI:CreateWindow(config)
 
 	local closeBtn = makeCtrlBtn("x","Close", true)
 	local minBtn   = makeCtrlBtn("minus","Minimize", false)
-	-- Minimize left, Close right (standard order)
 	minBtn.LayoutOrder   = 1
 	closeBtn.LayoutOrder = 2
 
 	closeBtn.MouseButton1Click:Connect(function()
-		tw(win,{Size=UDim2.new(0,WIN_W,0,0),BackgroundTransparency=1},0.18):Play()
-		task.delay(0.2,function() sg:Destroy() end)
+		if win:GetAttribute("Closing") then return end
+		win:SetAttribute("Closing", true)
+
+		local winScale = Instance.new("UIScale")
+		winScale.Scale = 1
+		winScale.Parent = win
+
+		local t = tw(winScale, {Scale = 0}, 0.25, Enum.EasingStyle.Back, Enum.EasingDirection.In)
+		t:Play()
+
+		pcall(function()
+			tw(outerGlow, {BackgroundTransparency = 1}, 0.15):Play()
+		end)
+
+		task.delay(0.25, function()
+			sg:Destroy()
+		end)
 	end)
 
 	local minOverlay = frame(sg, {
-		name="MinOverlay", color=K.bg,
+		name="MinOverlay", colorKey="bg",
 		size=UDim2.new(0, 150, 0, 36),
 		pos=UDim2.new(0.5, 0, 0.05, 0), anchor=Vector2.new(0.5, 0.5), z=100
 	})
 	rnd(minOverlay, 18)
-	brd(minOverlay, K.borderHi, 1)
+	brd(minOverlay, "borderHi", 1)
 	minOverlay.Visible = false
 
 	local minGlow = frame(minOverlay,{
-		name="OuterGlow", color=K.white, trans=0.93,
+		name="OuterGlow", colorKey="white", trans=0.93,
 		size=UDim2.new(1,10,1,10), pos=UDim2.new(0,-5,0,-5),
 		z=99,
 	})
@@ -1418,14 +1520,14 @@ function OceanUI:CreateWindow(config)
 	
 	if lucide then
 		img(dragArea, {
-			img=getLucide("move", 16), color=K.sub,
+			img=getLucide("move", 16), colorKey="sub",
 			sz=UDim2.new(0,16,0,16), pos=UDim2.new(0.5,0,0.5,0), anchor=Vector2.new(0.5,0.5), z=103
 		})
 	else
-		lbl(dragArea,{text="+",font=Enum.Font.GothamMedium,size=16,color=K.sub,sz=UDim2.fromScale(1,1),xa=Enum.TextXAlignment.Center,ya=Enum.TextYAlignment.Center,z=103})
+		lbl(dragArea,{text="+",font=Enum.Font.GothamMedium,size=16,colorKey="sub",sz=UDim2.fromScale(1,1),xa=Enum.TextXAlignment.Center,ya=Enum.TextYAlignment.Center,z=103})
 	end
 
-	frame(minOverlay,{name="Sep", color=K.border, size=UDim2.new(0,1,0,20), pos=UDim2.new(0,40,0.5,0), anchor=Vector2.new(0,0.5), z=102})
+	frame(minOverlay,{name="Sep", colorKey="border", size=UDim2.new(0,1,0,20), pos=UDim2.new(0,40,0.5,0), anchor=Vector2.new(0,0.5), z=102})
 
 	local clickArea = inst("TextButton", {
 		Name="ClickArea", BackgroundTransparency=1, Text="",
@@ -1434,13 +1536,13 @@ function OceanUI:CreateWindow(config)
 
 	if lucide then
 		img(clickArea, {
-			img=getLucide("layout-dashboard", 16), color=K.white,
+			img=getLucide("layout-dashboard", 16), colorKey="white",
 			sz=UDim2.new(0,16,0,16), pos=UDim2.new(0,10,0.5,0), anchor=Vector2.new(0,0.5), z=103
 		})
 	end
 	
 	lbl(clickArea, {
-		text="Open Ocean", font=Enum.Font.GothamMedium, size=12, color=K.white,
+		text="Open Ocean", font=Enum.Font.GothamMedium, size=12, colorKey="white",
 		sz=UDim2.new(1,-32,1,0), pos=UDim2.new(0, (lucide and 34 or 10),0,0), xa=Enum.TextXAlignment.Left, z=103
 	})
 
@@ -1529,9 +1631,8 @@ function OceanUI:CreateWindow(config)
 		or inp.UserInputType==Enum.UserInputType.Touch then dragging=false end
 	end)
 
-	-- Follow bar: pill below the window, appears after loading
 	local followBar = frame(win,{
-		name="FollowBar", color=K.white, trans=0.6,
+		name="FollowBar", colorKey="white", trans=0.6,
 		size=UDim2.new(0,50,0,4),
 		pos=UDim2.new(0.5,0,1,10), anchor=Vector2.new(0.5,0),
 		z=3,
@@ -1539,16 +1640,14 @@ function OceanUI:CreateWindow(config)
 	rnd(followBar, 99)
 	followBar.Visible = false
 
-	-- MAIN BODY
 	body = frame(win,{
-		name="Body", color=K.bg, trans=1,
+		name="Body", colorKey="bg", trans=1,
 		size=UDim2.new(1,0,1,-38), pos=UDim2.new(0,0,0,38),
 		z=4, clip=true,
 	})
 	rnd(body, 10)
 	body.Visible=false
 
-	-- SIDEBAR
 	local sidebar
 	local sidebarScroll
 	local navBtns = {}
@@ -1563,8 +1662,10 @@ function OceanUI:CreateWindow(config)
 			local active = (name == page)
 			tw(nb.accent,{BackgroundTransparency=active and 0 or 1},0.15):Play()
 			nb.lbl.Font = active and Enum.Font.GothamBold or Enum.Font.GothamMedium
+			nb.lbl:SetAttribute("tcKey", active and "white" or "sub")
 			tw(nb.lbl,{TextColor3=active and K.white or K.sub},0.15):Play()
 			if nb.icon then
+				nb.icon:SetAttribute("tcKey", active and "white" or "sub")
 				tw(nb.icon,{ImageColor3=active and K.white or K.sub},0.15):Play()
 			end
 			if nb.bg then
@@ -1576,22 +1677,14 @@ function OceanUI:CreateWindow(config)
 		end
 	end
 
-	-- Privacy mode state (shared across profile UI)
-	local _privacyActive   = false
-	local _privacyRealName = player.DisplayName
-	local _privacyRealThumb = ""
-	local _privacyCeoThumb  = ""
-	local _privacyNameLbl   = nil
-	local _privacyAvatarImg = nil
-
 	if true then -- always create sidebar (desktop + mobile)
 		sidebar = frame(body,{
-			name="Sidebar", color=K.bg, trans=1,
+			name="Sidebar", colorKey="bg", trans=1,
 			size=UDim2.new(0,SIDE_W,1,0), z=5,
 		})
 		rnd(sidebar, 10)
 		frame(win,{
-			name="SidebarSep",color=K.border,
+			name="SidebarSep",colorKey="border",
 			size=UDim2.new(0,1,1,0),pos=UDim2.new(0,SIDE_W-1,0,0),z=15,
 		})
 		
@@ -1613,28 +1706,46 @@ function OceanUI:CreateWindow(config)
 		}, sidebarScroll)
 		pad(sidebarScroll, 6, 6, 8, 8)
 
-		-- User profile section pinned to bottom of sidebar
+		-- Privacy mode state (shared across profile UI)
+		local _privacyActive   = false
+		local _privacyRealName = player.DisplayName
+		local _privacyRealThumb = ""
+		local _privacyCeoThumb  = "rbxassetid://15286438075"
+		local _privacyNameLbl   = nil
+		local _privacyAvatarImg = nil
+
+		task.spawn(function()
+			pcall(function()
+				local thumb = Players:GetUserThumbnailAsync(
+					20986,
+					Enum.ThumbnailType.AvatarBust,
+					Enum.ThumbnailSize.Size100x100
+				)
+				if thumb then _privacyCeoThumb = thumb end
+			end)
+		end)
+
 		local profileSection = frame(sidebar,{
-			name="Profile", color=K.bg, trans=1,
+			name="Profile", colorKey="bg", trans=1,
 			size=UDim2.new(1,-1,0,profileH),
 			pos=UDim2.new(0,0,1,0), anchor=Vector2.new(0,1),
 			z=6,
 		})
 
 		frame(profileSection,{
-			name="PSep", color=K.border,
+			name="PSep", colorKey="border",
 			size=UDim2.new(1,-16,0,1), pos=UDim2.new(0,8,0,0), z=7,
 		})
 
 		local AVA = 46
 		local avatarHolder = frame(profileSection,{
-			name="Avatar", color=K.raised,
+			name="Avatar", colorKey="raised",
 			size=UDim2.new(0,AVA,0,AVA),
 			pos=UDim2.new(0,8,0.5,0), anchor=Vector2.new(0,0.5),
 			z=7,
 		})
 		rnd(avatarHolder,99)
-		brd(avatarHolder,K.border,1)
+		brd(avatarHolder,"border",1)
 
 		local avatarImg = inst("ImageLabel",{
 			BackgroundTransparency=1, Image="",
@@ -1645,22 +1756,22 @@ function OceanUI:CreateWindow(config)
 		_privacyAvatarImg = avatarImg
 
 		local txtX = AVA + 16
-		_privacyNameLbl = lbl(profileSection,{
+		local profileNameLbl = lbl(profileSection,{
 			text=player.DisplayName,
-			font=Enum.Font.GothamBold, size=15, color=K.text,
+			font=Enum.Font.GothamBold, size=15, colorKey="text",
 			sz=UDim2.new(1,-txtX-4,0,18),
 			pos=UDim2.new(0,txtX,0.5,-15), z=7,
 		})
+		_privacyNameLbl = profileNameLbl
 
 		local execLbl = lbl(profileSection,{
 			text="",
-			font=Enum.Font.GothamMedium, size=13, color=K.muted,
+			font=Enum.Font.GothamMedium, size=13, colorKey="muted",
 			sz=UDim2.new(1,-txtX-4,0,15),
 			pos=UDim2.new(0,txtX,0.5,5), z=7,
 		})
 
 		task.spawn(function()
-			-- Avatar thumbnail (real player)
 			local ok, thumb = pcall(function()
 				return Players:GetUserThumbnailAsync(
 					player.UserId,
@@ -1675,22 +1786,6 @@ function OceanUI:CreateWindow(config)
 				end
 			end
 
-			-- Roblox CEO (David Baszucki) headshot for privacy mode
-			local okCeo, ceoThumb = pcall(function()
-				return Players:GetUserThumbnailAsync(
-					1,
-					Enum.ThumbnailType.AvatarBust,
-					Enum.ThumbnailSize.Size100x100
-				)
-			end)
-			if okCeo and ceoThumb then
-				_privacyCeoThumb = ceoThumb
-				if _privacyActive then
-					avatarImg.Image = ceoThumb
-				end
-			end
-
-			-- Executor name (safe cross-executor detection)
 			local execName = "Unknown"
 			pcall(function()
 				if identifyexecutor then
@@ -1703,16 +1798,14 @@ function OceanUI:CreateWindow(config)
 		end)
 	end
 
-	-- CONTENT AREA (container for all tabs)
 	local contentX = SIDE_W
 	local contentArea = frame(body,{
-		name="ContentArea", color=K.surface, trans=1,
+		name="ContentArea", colorKey="surface", trans=1,
 		size=UDim2.new(1,-contentX,1,0), pos=UDim2.new(0,contentX,0,0),
 		clip=true, z=5,
 	})
 	rnd(contentArea, 10)
 
-	-- Background watermark: rotated container with individual char control
 	do
 		local BG_H = MOBILE and 70 or 90
 		local bgGrad = ColorSequence.new({
@@ -1720,18 +1813,16 @@ function OceanUI:CreateWindow(config)
 			ColorSequenceKeypoint.new(0.45,K.logoMid),
 			ColorSequenceKeypoint.new(1,   K.logoBot),
 		})
-		-- {char, fontSize, xOffset, yOffset, width}
 		local BG_CHARS = {
-			{"}",  96, 0,   -5, 54},
-			{"<",  86, 56,   0, 48},
-			{"(",  86, 106, -1, 42},
-			{"(",  86, 150, -1, 42},
-			{"(",  86, 194, -1, 42},
-			{"*",  50, 235, -14, 30},
-			{">",  86, 267,  6, 48},
+			{"}",  96,   0,  -5, 54},
+			{"<",  86,  56,   0, 48},
+			{"(",  86, 106,  -1, 42},
+			{"(",  86, 150,  -1, 42},
+			{"°",  66, 194,  -1, 38},
+			{">",  86, 234,   6, 48},
 		}
 		local bgWrap = frame(contentArea,{
-			name="BgLogo", color=K.bg, trans=1,
+			name="BgLogo", colorKey="bg", trans=1,
 			size=UDim2.new(0,320,0,BG_H),
 			pos=UDim2.new(0.5,0,0.5,0), anchor=Vector2.new(0.5,0.5), z=1,
 		})
@@ -1749,10 +1840,17 @@ function OceanUI:CreateWindow(config)
 				Position=UDim2.new(0,xo,0,yo),
 				ZIndex=1,
 			}, bgWrap)
-			inst("UIGradient",{Rotation=90,Color=bgGrad},cl)
+			local grad = inst("UIGradient",{Rotation=90,Color=bgGrad},cl)
+			registerThemeUpdater(function()
+				cl.TextColor3 = K.white
+				grad.Color = ColorSequence.new({
+					ColorSequenceKeypoint.new(0,   K.logoTop),
+					ColorSequenceKeypoint.new(0.45,K.logoMid),
+					ColorSequenceKeypoint.new(1,   K.logoBot),
+				})
+			end, cl)
 		end
 
-		-- Scale logo proportionally as window grows beyond start size
 		local bgScale = inst("UIScale",{Scale=1}, bgWrap)
 		local _baseContentW = WIN_W - contentX
 		contentArea:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
@@ -1760,7 +1858,6 @@ function OceanUI:CreateWindow(config)
 		end)
 	end
 
-	-- WINDOW OBJECT
 	local Window = {}
 	local tabCount = 0
 	local tagCount = 0
@@ -1776,7 +1873,8 @@ function OceanUI:CreateWindow(config)
 		rnd(tWrap, 4)
 		
 		local tLbl = lbl(tWrap,{
-			text=text, font=Enum.Font.GothamBold, size=11, color=textColor or K.white,
+			text=text, font=Enum.Font.GothamBold, size=11,
+			color=textColor, colorKey=not textColor and "white" or nil,
 			sz=UDim2.new(0,0,1,0), pos=UDim2.new(0,0,0,-1), z=7,
 			xa=Enum.TextXAlignment.Center,
 		})
@@ -1791,26 +1889,23 @@ function OceanUI:CreateWindow(config)
 		tabCount = tabCount + 1
 		local tabKey = tabName
 
-		-- Create content frame for this tab
 		local tabContent = frame(contentArea,{
-			name="Tab_"..tabName, color=K.bg, trans=1,
+			name="Tab_"..tabName, colorKey="bg", trans=1,
 			size=UDim2.fromScale(1,1), z=5,
 		})
 		tabContent.Visible = false
 
-		-- Page header
 		local pageHdr = lbl(tabContent,{
 			name="PageHdr", text=tabName,
-			font=Enum.Font.GothamBold, size=MOBILE and 18 or 16, color=K.white,
+			font=Enum.Font.GothamBold, size=MOBILE and 18 or 16, colorKey="white",
 			sz=UDim2.new(1,-24,0,20), pos=UDim2.new(0,18,0,14), z=6,
 		})
 
 		frame(tabContent,{
-			name="HDiv",color=K.border,
+			name="HDiv",colorKey="border",
 			size=UDim2.new(1,-20,0,1),pos=UDim2.new(0,10,0,40),z=6,
 		})
 
-		-- Scrolling body
 		local scroll = inst("ScrollingFrame",{
 			Name="Scroll",
 			Size=UDim2.new(1,0,1,-46), Position=UDim2.new(0,0,0,46),
@@ -1821,6 +1916,9 @@ function OceanUI:CreateWindow(config)
 			AutomaticCanvasSize=Enum.AutomaticSize.Y,
 			ZIndex=6,
 		},tabContent)
+		registerThemeUpdater(function()
+			scroll.ScrollBarImageColor3 = K.border
+		end, scroll)
 		pad(scroll,18,18,10,18)
 
 		inst("UIListLayout",{
@@ -1829,23 +1927,22 @@ function OceanUI:CreateWindow(config)
 			Padding=UDim.new(0,0),
 		},scroll)
 
-		-- Add sidebar button
 		if sidebar then
 			local nb = frame(sidebarScroll,{
-				name="NB_"..tabName, color=K.white, trans=1,
+				name="NB_"..tabName, colorKey="white", trans=1,
 				size=UDim2.new(1,0,0,36), z=6,
 			})
 			nb.LayoutOrder = tabCount
 			rnd(nb,6)
 
 			local accent=frame(nb,{
-				name="Accent",color=K.white,trans=1,
+				name="Accent",colorKey="white",trans=1,
 				size=UDim2.new(0,3,0,16),pos=UDim2.new(0,0,0.5,0),anchor=Vector2.new(0,0.5),z=8,
 			})
 			rnd(accent,99)
 
 			local nl=lbl(nb,{
-				text=tabName,font=Enum.Font.GothamMedium,size=SIDE_W < 140 and 12 or 15,color=K.sub,
+				text=tabName,font=Enum.Font.GothamMedium,size=SIDE_W < 140 and 12 or 15,colorKey="sub",
 				sz=UDim2.new(1,0,1,0),pos=UDim2.new(0,(iconName and lucide) and (SIDE_W < 140 and 28 or 38) or (SIDE_W < 140 and 8 or 16),0,0),z=7,
 			})
 
@@ -1853,7 +1950,7 @@ function OceanUI:CreateWindow(config)
 			if iconName and lucide then
 				iconImg = img(nb,{
 					name="Icon", img=getLucide(iconName, 18),
-					color=K.sub, sz=UDim2.new(0,19,0,19), pos=UDim2.new(0,12,0.5,0), anchor=Vector2.new(0,0.5), z=7,
+					colorKey="sub", sz=UDim2.new(0,19,0,19), pos=UDim2.new(0,12,0.5,0), anchor=Vector2.new(0,0.5), z=7,
 				})
 			end
 
@@ -1868,12 +1965,10 @@ function OceanUI:CreateWindow(config)
 
 		tabs[tabKey] = { content=tabContent, scroll=scroll }
 
-		-- Auto-select first tab
 		if tabCount == 1 then
 			task.defer(function() setNav(tabKey) end)
 		end
 
-		-- TAB OBJECT
 		local Tab = {}
 		local rowCounter = 0
 
@@ -1881,7 +1976,7 @@ function OceanUI:CreateWindow(config)
 			rowCounter = rowCounter + 1
 			local rowH = subtitle and 54 or 42
 			local r = frame(scroll,{
-				name="Row_"..title, color=K.bg, trans=1,
+				name="Row_"..title, colorKey="bg", trans=1,
 				size=UDim2.new(1,0,0,rowH), z=7,
 			})
 			r.LayoutOrder = rowCounter
@@ -1891,24 +1986,24 @@ function OceanUI:CreateWindow(config)
 			if iconName and lucide then
 				img(r,{
 					name="Icon", img=getLucide(iconName, 20),
-					color=K.text, sz=UDim2.new(0,21,0,21), pos=UDim2.new(0,0,0.5,0), anchor=Vector2.new(0,0.5), z=8,
+					colorKey="text", sz=UDim2.new(0,21,0,21), pos=UDim2.new(0,0,0.5,0), anchor=Vector2.new(0.5,0.5), z=8,
 				})
 			end
 
 			lbl(r,{
-				text=title, font=Enum.Font.GothamMedium, size=14, color=K.text,
+				text=title, font=Enum.Font.GothamMedium, size=14, colorKey="text",
 				sz=UDim2.new(0.6,0,0,20),
 				pos=UDim2.new(0,textOffset,0, subtitle and 8 or 11), z=8,
 			})
 			if subtitle then
 				lbl(r,{
-					text=subtitle, font=Enum.Font.Gotham, size=12, color=K.muted,
+					text=subtitle, font=Enum.Font.Gotham, size=12, colorKey="muted",
 					sz=UDim2.new(0.6,0,0,16), pos=UDim2.new(0,textOffset,0,28), z=8,
 				})
 			end
 
 			frame(r,{
-				name="Div", color=K.border,
+				name="Div", colorKey="border",
 				size=UDim2.new(1,0,0,1),
 				pos=UDim2.new(0,0,1,-1), z=8,
 			})
@@ -1919,7 +2014,7 @@ function OceanUI:CreateWindow(config)
 		local function makeSliderRow(title, iconName)
 			rowCounter = rowCounter + 1
 			local r = frame(scroll,{
-				name="SlRow_"..title, color=K.bg, trans=1,
+				name="SlRow_"..title, colorKey="bg", trans=1,
 				size=UDim2.new(1,0,0,60), z=7,
 			})
 			r.LayoutOrder = rowCounter
@@ -1929,17 +2024,17 @@ function OceanUI:CreateWindow(config)
 			if iconName and lucide then
 				img(r,{
 					name="Icon", img=getLucide(iconName, 20),
-					color=K.text, sz=UDim2.new(0,21,0,21), pos=UDim2.new(0,0,0,10), z=8,
+					colorKey="text", sz=UDim2.new(0,21,0,21), pos=UDim2.new(0,0,0,10), z=8,
 				})
 			end
 
 			lbl(r,{
-				text=title, font=Enum.Font.GothamMedium, size=14, color=K.text,
+				text=title, font=Enum.Font.GothamMedium, size=14, colorKey="text",
 				sz=UDim2.new(1,0,0,20), pos=UDim2.new(0,textOffset,0,10), z=8,
 			})
 
 			frame(r,{
-				name="Div", color=K.border,
+				name="Div", colorKey="border",
 				size=UDim2.new(1,0,0,1),
 				pos=UDim2.new(0,0,1,-1), z=8,
 			})
@@ -1947,7 +2042,6 @@ function OceanUI:CreateWindow(config)
 			return r
 		end
 
-		--- Add a toggle element
 		function Tab:AddToggle(opts)
 			opts = opts or {}
 			local r = makeRow(opts.Title or "Toggle", opts.Subtitle, opts.Icon)
@@ -1974,7 +2068,6 @@ function OceanUI:CreateWindow(config)
 			}
 		end
 
-		--- Add a slider element
 		function Tab:AddSlider(opts)
 			opts = opts or {}
 			local r = makeSliderRow(opts.Title or "Slider", opts.Icon)
@@ -1982,11 +2075,10 @@ function OceanUI:CreateWindow(config)
 			sl.frame.Position = UDim2.new(0,0,0,30)
 			sl.frame.ZIndex   = 8
 
-			-- Current value badge (top-right of row)
 			local initVal = opts.Default or opts.Min or 0
 			local valLbl = lbl(r,{
 				text=tostring(math.round(initVal)),
-				font=Enum.Font.GothamBold, size=13, color=K.white,
+				font=Enum.Font.GothamBold, size=13, colorKey="white",
 				sz=UDim2.new(0,55,0,20),
 				pos=UDim2.new(1,0,0,8), anchor=Vector2.new(1,0),
 				xa=Enum.TextXAlignment.Right, z=9,
@@ -2010,7 +2102,6 @@ function OceanUI:CreateWindow(config)
 			}
 		end
 
-		--- Add a button element
 		function Tab:AddButton(opts)
 			opts = opts or {}
 			local r = makeRow(opts.Title or "Button", opts.Subtitle, opts.Icon)
@@ -2021,16 +2112,18 @@ function OceanUI:CreateWindow(config)
 
 			local ab = btn(r,{
 				text=btnText, font=Enum.Font.GothamMedium, size=12,
-				color=K.raised, tc=K.white,
+				colorKey="raised", tcKey="white",
 				sz=UDim2.new(0,bW,0,28), pos=UDim2.new(1,0,0.5,0), anchor=Vector2.new(1,0.5), z=9,
 			})
 			rnd(ab,5)
-			brd(ab,K.border,1)
+			brd(ab,"border",1)
 
 			ab.MouseEnter:Connect(function() 
+				ab:SetAttribute("Hovered", true)
 				tw(ab,{BackgroundColor3=K.border},0.1):Play() 
 			end)
 			ab.MouseLeave:Connect(function() 
+				ab:SetAttribute("Hovered", false)
 				tw(ab,{BackgroundColor3=K.raised},0.1):Play() 
 			end)
 			ab.MouseButton1Click:Connect(function()
@@ -2044,11 +2137,10 @@ function OceanUI:CreateWindow(config)
 			return ab
 		end
 
-		--- Add a label/info text
 		function Tab:AddLabel(text, iconName)
 			rowCounter = rowCounter + 1
 			local r = frame(scroll,{
-				name="LblRow", color=K.bg, trans=1,
+				name="LblRow", colorKey="bg", trans=1,
 				size=UDim2.new(1,0,0,34), z=7,
 			})
 			r.LayoutOrder = rowCounter
@@ -2058,17 +2150,17 @@ function OceanUI:CreateWindow(config)
 			if iconName and lucide then
 				img(r,{
 					name="Icon", img=getLucide(iconName, 18),
-					color=K.sub, sz=UDim2.new(0,19,0,19), pos=UDim2.new(0,0,0.5,0), anchor=Vector2.new(0,0.5), z=8,
+					colorKey="sub", sz=UDim2.new(0,19,0,19), pos=UDim2.new(0,0,0.5,0), anchor=Vector2.new(0,0.5), z=8,
 				})
 			end
 
 			local l = lbl(r,{
-				text=text or "", font=Enum.Font.Gotham, size=13, color=K.sub,
+				text=text or "", font=Enum.Font.Gotham, size=13, colorKey="sub",
 				sz=UDim2.new(1,0,1,0), pos=UDim2.new(0,textOffset,0,0), z=8,
 			})
 
 			frame(r,{
-				name="Div", color=K.border,
+				name="Div", colorKey="border",
 				size=UDim2.new(1,0,0,1),
 				pos=UDim2.new(0,0,1,-1), z=8,
 			})
@@ -2079,7 +2171,6 @@ function OceanUI:CreateWindow(config)
 			}
 		end
 
-		--- Add a dropdown/select element
 		function Tab:AddDropdown(opts)
 			opts = opts or {}
 			local r = makeRow(opts.Title or "Dropdown", opts.Subtitle, opts.Icon)
@@ -2109,7 +2200,6 @@ function OceanUI:CreateWindow(config)
 			}
 		end
 
-		--- Add a multidropdown element
 		function Tab:AddMultiDropdown(opts)
 			opts = opts or {}
 			local r = makeRow(opts.Title or "Multi Dropdown", opts.Subtitle, opts.Icon)
@@ -2139,7 +2229,6 @@ function OceanUI:CreateWindow(config)
 			}
 		end
 
-		--- Add a text input element
 		function Tab:AddTextBox(opts)
 			opts = opts or {}
 			local r = makeRow(opts.Title or "Input", opts.Subtitle, opts.Icon)
@@ -2160,7 +2249,6 @@ function OceanUI:CreateWindow(config)
 			}
 		end
 
-		--- Add a color picker element
 		function Tab:AddColorPicker(opts)
 			opts = opts or {}
 			local r = makeRow(opts.Title or "Color Picker", opts.Subtitle, opts.Icon)
@@ -2192,7 +2280,6 @@ function OceanUI:CreateWindow(config)
 			}
 		end
 
-		--- Add a keybind element
 		function Tab:AddKeybind(opts)
 			opts = opts or {}
 			local currentKey = opts.Default or Enum.KeyCode.Unknown
@@ -2202,17 +2289,18 @@ function OceanUI:CreateWindow(config)
 			local keyBtn = btn(r,{
 				text = currentKey == Enum.KeyCode.Unknown and "None" or currentKey.Name,
 				font=Enum.Font.GothamMedium, size=13,
-				color=K.raised, tc=K.sub,
+				colorKey="raised", tcKey="sub",
 				sz=UDim2.new(0,90,0,28),
 				pos=UDim2.new(1,0,0.5,0), anchor=Vector2.new(1,0.5), z=10,
 			})
 			rnd(keyBtn,5)
-			brd(keyBtn,K.border,1)
+			brd(keyBtn,"border",1)
 
 			local listening = false
 			keyBtn.MouseButton1Click:Connect(function()
 				listening = true
 				keyBtn.Text = "..."
+				keyBtn:SetAttribute("Hovered", true)
 				tw(keyBtn,{BackgroundColor3=K.border},0.1):Play()
 			end)
 
@@ -2232,6 +2320,7 @@ function OceanUI:CreateWindow(config)
 						keyBtn.Text = currentKey.Name
 					end
 					listening = false
+					keyBtn:SetAttribute("Hovered", false)
 					tw(keyBtn,{BackgroundColor3=K.raised},0.1):Play()
 					changedEvent:Fire(currentKey)
 				end
@@ -2248,19 +2337,22 @@ function OceanUI:CreateWindow(config)
 			}
 		end
 
-		--- Add a separator/spacer
 		function Tab:AddSeparator()
 			rowCounter = rowCounter + 1
 			local r = frame(scroll,{
-				name="Sep", color=K.bg, trans=1,
+				name="Sep", colorKey="bg", trans=1,
 				size=UDim2.new(1,0,0,12), z=7,
 			})
 			r.LayoutOrder = rowCounter
 		end
 
-		--- Privacy Mode toggle — hides player name and swaps avatar to Roblox CEO.
-		-- Syntax: tab:AddPrivacyToggle(tab, { Title=..., Subtitle=..., Default=false })
-		function Tab:AddPrivacyToggle(_, opts)
+		function Tab:AddPrivacyToggle(first, second)
+			local opts = second
+			if type(first) == "table" and not second then
+				opts = first
+			elseif not first and not second then
+				opts = {}
+			end
 			opts = opts or {}
 			return self:AddToggle({
 				Title    = opts.Title    or "Privacy Mode",
@@ -2277,29 +2369,9 @@ function OceanUI:CreateWindow(config)
 		return Tab
 	end
 
-	--- Set privacy mode on/off.
-	-- When active: player name → "Player-123", avatar → Roblox CEO headshot.
-	function Window:SetPrivacy(state)
-		_privacyActive = state == true
-		if _privacyNameLbl then
-			_privacyNameLbl.Text = _privacyActive and "Player-123" or _privacyRealName
-		end
-		if _privacyAvatarImg then
-			if _privacyActive then
-				-- Use CEO thumb if already loaded, else placeholder
-				_privacyAvatarImg.Image = (_privacyCeoThumb ~= "") and _privacyCeoThumb or "rbxassetid://0"
-			else
-				_privacyAvatarImg.Image = _privacyRealThumb
-			end
-		end
-	end
-
-
-
-	-- NOTIFICATION SYSTEM
 	local notifContainer = frame(sg,{
 		name="NotifContainer", color=K.bg, trans=1,
-		size=UDim2.new(0, 260, 1, 0), pos=UDim2.new(1, -280, 0, 0), z=50,
+		size=UDim2.new(0, 280, 1, 0), pos=UDim2.new(1, -296, 0, 0), z=50,
 		clip=false
 	})
 	
@@ -2307,72 +2379,222 @@ function OceanUI:CreateWindow(config)
 		FillDirection=Enum.FillDirection.Vertical,
 		HorizontalAlignment=Enum.HorizontalAlignment.Right,
 		VerticalAlignment=Enum.VerticalAlignment.Top,
-		Padding=UDim.new(0, 10),
+		SortOrder=Enum.SortOrder.LayoutOrder,
+		Padding=UDim.new(0, 8),
 	}, notifContainer)
-	pad(notifContainer, 20, 0, 20, 20)
+	pad(notifContainer, 0, 0, 24, 0)
+
+	local notifCount = 0
 
 	function Window:Notify(opts)
 		opts = opts or {}
 		local duration = opts.Duration or 3
-		
-		local nf = frame(notifContainer,{
-			name="Notif", color=K.bg, trans=0,
-			size=UDim2.new(1, 0, 0, 0), z=51, clip=true,
-		})
-		rnd(nf, 6)
-		brd(nf, K.border, 1)
+		local hasTitle = opts.Title and opts.Title ~= ""
+		local hasText  = opts.Text  and opts.Text  ~= ""
+		local NOTIF_H  = (hasTitle and hasText) and 68 or 46
 
-		local outer = frame(nf,{
-			name="Outer", color=K.bg, trans=1,
-			size=UDim2.new(1, 0, 1, 0), z=52,
-		})
-		
-		local textOffset = 14
-		local iconImg
-		if opts.Icon and lucide then
-			iconImg = img(outer,{
-				name="Icon", img=getLucide(opts.Icon, 18),
-				color=opts.IconColor or K.white, sz=UDim2.new(0,18,0,18), pos=UDim2.new(0,12,0.5,0), anchor=Vector2.new(0,0.5), z=53,
+		if not hasTitle and not hasText then return end
+
+		notifCount = notifCount + 1
+
+		local nf = inst("Frame", {
+			Name                   = "NF_" .. notifCount,
+			BackgroundTransparency = 1,
+			Size                   = UDim2.new(1, 0, 0, 0),
+			ClipsDescendants       = false,
+			ZIndex                 = 51,
+			LayoutOrder            = notifCount,
+		}, notifContainer)
+
+		local outerGlow = inst("Frame", {
+			Name                   = "OuterGlow",
+			BackgroundColor3       = K.white,
+			BackgroundTransparency = 1,
+			Size                   = UDim2.new(1, 10, 0, NOTIF_H + 10),
+			Position               = UDim2.new(0, 23, 0, -5),
+			BorderSizePixel        = 0,
+			ZIndex                 = 50,
+		}, nf)
+		rnd(outerGlow, 14)
+		registerThemeUpdater(function() outerGlow.BackgroundColor3 = K.white end, outerGlow)
+
+		local card = inst("CanvasGroup", {
+			Name                   = "Card",
+			BackgroundColor3       = K.bg,
+			BackgroundTransparency = 0,
+			GroupTransparency      = 1,
+			Size                   = UDim2.new(1, 0, 0, NOTIF_H),
+			Position               = UDim2.new(0, 28, 0, 0),
+			ClipsDescendants       = true,
+			ZIndex                 = 52,
+		}, nf)
+		rnd(card, 10)
+		registerThemeUpdater(function() card.BackgroundColor3 = K.bg end, card)
+
+		local stroke = inst("UIStroke", {
+			Color               = K.borderHi,
+			Thickness           = 1,
+			Transparency        = 0.25,
+			ApplyStrokeMode     = Enum.ApplyStrokeMode.Border,
+		}, card)
+		registerThemeUpdater(function() stroke.Color = K.borderHi end, stroke)
+
+		local cardScale = inst("UIScale", {Scale = 0.94}, card)
+
+		local accent = inst("Frame", {
+			Name            = "Accent",
+			BackgroundColor3 = K.white,
+			BorderSizePixel  = 0,
+			Size             = UDim2.new(0, 3, 1, 0),
+			ZIndex           = 54,
+		}, card)
+		rnd(accent, 2)
+		registerThemeUpdater(function() accent.BackgroundColor3 = K.white end, accent)
+
+		local iconLoaded = opts.Icon and lucide and getLucide(opts.Icon, 18) ~= ""
+		local txtX = iconLoaded and 54 or 14
+
+		if iconLoaded then
+			local iconBox = inst("Frame", {
+				Name             = "IconBox",
+				BackgroundColor3 = K.raised,
+				BorderSizePixel  = 0,
+				Size             = UDim2.new(0, 32, 0, 32),
+				Position         = UDim2.new(0, 12, 0.5, 0),
+				AnchorPoint      = Vector2.new(0, 0.5),
+				ZIndex           = 54,
+			}, card)
+			rnd(iconBox, 7)
+			registerThemeUpdater(function() iconBox.BackgroundColor3 = K.raised end, iconBox)
+			img(iconBox, {
+				name="Ic", img=getLucide(opts.Icon, 18),
+				colorKey="white",
+				sz=UDim2.new(0, 16, 0, 16),
+				pos=UDim2.new(0.5, 0, 0.5, 0), anchor=Vector2.new(0.5, 0.5), z=55,
 			})
-			textOffset = 40
-		end
-		
-		local titleL, textL
-		if opts.Title and opts.Text then
-			titleL = lbl(outer,{
-				text=opts.Title, font=Enum.Font.GothamMedium, size=14, color=K.white,
-				sz=UDim2.new(1, -textOffset - 10, 0, 16), pos=UDim2.new(0, textOffset, 0, 10), z=53,
-			})
-			textL = lbl(outer,{
-				text=opts.Text, font=Enum.Font.Gotham, size=13, color=K.muted,
-				sz=UDim2.new(1, -textOffset - 10, 0, 14), pos=UDim2.new(0, textOffset, 0, 28), z=53,
-			})
-			tw(nf,{Size=UDim2.new(1,0,0,54)},0.25,Enum.EasingStyle.Back):Play()
-		elseif opts.Title or opts.Text then
-			titleL = lbl(outer,{
-				text=opts.Title or opts.Text, font=Enum.Font.GothamMedium, size=14, color=K.white,
-				sz=UDim2.new(1, -textOffset - 10, 1, 0), pos=UDim2.new(0, textOffset, 0, 0), z=53,
-			})
-			tw(nf,{Size=UDim2.new(1,0,0,40)},0.25,Enum.EasingStyle.Back):Play()
 		end
 
-		task.delay(duration, function()
-			local t = tw(nf,{Size=UDim2.new(1,0,0,0), BackgroundTransparency=1},0.2,Enum.EasingStyle.Quint)
-			if titleL then tw(titleL,{TextTransparency=1},0.2):Play() end
-			if textL then tw(textL,{TextTransparency=1},0.2):Play() end
-			if iconImg then tw(iconImg,{ImageTransparency=1},0.2):Play() end
-			for _, child in ipairs(nf:GetChildren()) do
-				if child:IsA("UIStroke") then tw(child,{Transparency=1},0.2):Play() end
-			end
-			t:Play()
-			t.Completed:Connect(function() nf:Destroy() end)
-		end)
+		if hasTitle and hasText then
+			local tl = inst("TextLabel", {
+				BackgroundTransparency = 1,
+				Text           = opts.Title,
+				TextColor3     = K.text,
+				Font           = Enum.Font.GothamBold,
+				TextSize       = 13,
+				TextXAlignment = Enum.TextXAlignment.Left,
+				TextYAlignment = Enum.TextYAlignment.Top,
+				TextTruncate   = Enum.TextTruncate.AtEnd,
+				Size           = UDim2.new(1, -txtX - 34, 0, 18),
+				Position       = UDim2.new(0, txtX, 0, 10),
+				ZIndex         = 53,
+			}, card)
+			registerThemeUpdater(function() tl.TextColor3 = K.text end, tl)
+
+			local sl = inst("TextLabel", {
+				BackgroundTransparency = 1,
+				Text           = opts.Text,
+				TextColor3     = K.muted,
+				Font           = Enum.Font.GothamMedium,
+				TextSize       = 11,
+				TextXAlignment = Enum.TextXAlignment.Left,
+				TextYAlignment = Enum.TextYAlignment.Top,
+				TextWrapped    = true,
+				Size           = UDim2.new(1, -txtX - 34, 0, 28),
+				Position       = UDim2.new(0, txtX, 0, 30),
+				ZIndex         = 53,
+			}, card)
+			registerThemeUpdater(function() sl.TextColor3 = K.muted end, sl)
+		else
+			local single = inst("TextLabel", {
+				BackgroundTransparency = 1,
+				Text           = hasTitle and opts.Title or opts.Text,
+				TextColor3     = K.text,
+				Font           = Enum.Font.GothamBold,
+				TextSize       = 13,
+				TextXAlignment = Enum.TextXAlignment.Left,
+				TextYAlignment = Enum.TextYAlignment.Center,
+				TextWrapped    = true,
+				Size           = UDim2.new(1, -txtX - 34, 1, 0),
+				Position       = UDim2.new(0, txtX, 0, 0),
+				ZIndex         = 53,
+			}, card)
+			registerThemeUpdater(function() single.TextColor3 = K.text end, single)
+		end
+
+		local xBtn = inst("TextButton", {
+			Name                   = "X",
+			BackgroundTransparency = 1,
+			Text                   = "×",
+			TextColor3             = K.sub,
+			Font                   = Enum.Font.GothamBold,
+			TextSize               = 18,
+			Size                   = UDim2.new(0, 26, 0, 26),
+			Position               = UDim2.new(1, -30, 0, 4),
+			AutoButtonColor        = false,
+			ZIndex                 = 55,
+		}, card)
+		registerThemeUpdater(function() xBtn.TextColor3 = K.sub end, xBtn)
+		xBtn.MouseEnter:Connect(function() tw(xBtn, {TextColor3=K.text}, 0.08):Play() end)
+		xBtn.MouseLeave:Connect(function() tw(xBtn, {TextColor3=K.sub}, 0.08):Play() end)
+
+		tw(nf, {Size=UDim2.new(1, 0, 0, NOTIF_H)}, 0.22, Enum.EasingStyle.Quint):Play()
+		tw(card, {GroupTransparency=0, Position=UDim2.new(0, 0, 0, 0)}, 0.24, Enum.EasingStyle.Quint):Play()
+		tw(outerGlow, {BackgroundTransparency=0.93, Position=UDim2.new(0, -5, 0, -5)}, 0.24, Enum.EasingStyle.Quint):Play()
+		tw(cardScale, {Scale=1}, 0.28, Enum.EasingStyle.Back):Play()
+
+		local dismissed = false
+		local function dismiss()
+			if dismissed then return end
+			dismissed = true
+			xBtn.Active = false
+
+			local fadeOut = tw(card, {GroupTransparency=1, Position=UDim2.new(0, 34, 0, 0)}, 0.22, Enum.EasingStyle.Quint, Enum.EasingDirection.In)
+			fadeOut:Play()
+			tw(outerGlow, {BackgroundTransparency=1, Position=UDim2.new(0, 29, 0, -5)}, 0.22, Enum.EasingStyle.Quint, Enum.EasingDirection.In):Play()
+			tw(cardScale, {Scale=0.92}, 0.22, Enum.EasingStyle.Quint, Enum.EasingDirection.In):Play()
+
+			fadeOut.Completed:Connect(function()
+				card.Visible = false
+				outerGlow.Visible = false
+				nf.ClipsDescendants = true
+				local shrink = tw(nf, {Size=UDim2.new(1, 0, 0, 0)}, 0.16, Enum.EasingStyle.Quint, Enum.EasingDirection.In)
+				shrink:Play()
+				shrink.Completed:Connect(function() nf:Destroy() end)
+			end)
+		end
+
+		xBtn.MouseButton1Click:Connect(dismiss)
+		task.delay(duration, dismiss)
 	end
 
-	--- Destroy the window
+	function Window:SetPrivacy(state)
+		_privacyActive = state == true
+		if _privacyNameLbl then
+			_privacyNameLbl.Text = _privacyActive and "Player-123" or _privacyRealName
+		end
+		if _privacyAvatarImg then
+			_privacyAvatarImg.Image = _privacyActive and _privacyCeoThumb or _privacyRealThumb
+		end
+	end
+
 	function Window:Destroy()
-		tw(win,{Size=UDim2.new(0,WIN_W,0,0),BackgroundTransparency=1},0.18):Play()
-		task.delay(0.2,function() sg:Destroy() end)
+		if win:GetAttribute("Closing") then return end
+		win:SetAttribute("Closing", true)
+
+		local winScale = Instance.new("UIScale")
+		winScale.Scale = 1
+		winScale.Parent = win
+
+		local t = tw(winScale, {Scale = 0}, 0.25, Enum.EasingStyle.Back, Enum.EasingDirection.In)
+		t:Play()
+
+		pcall(function()
+			tw(outerGlow, {BackgroundTransparency = 1}, 0.15):Play()
+		end)
+
+		task.delay(0.25, function()
+			sg:Destroy()
+		end)
 	end
 
 
@@ -2425,7 +2647,6 @@ function OceanUI:CreateWindow(config)
 		end)
 	end)
 
-	-- CONFIG MANAGER
 	local HttpService = game:GetService("HttpService")
 	Window.ConfigManager = {}
 	local ConfigManager = Window.ConfigManager
@@ -2479,6 +2700,14 @@ function OceanUI:CreateWindow(config)
 			end
 		end
 		return Config
+	end
+
+	function Window:SetTheme(name)
+		setTheme(name)
+	end
+
+	function Window:GetTheme()
+		return activeThemeName
 	end
 
 	return Window
