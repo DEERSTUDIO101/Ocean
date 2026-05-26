@@ -1721,7 +1721,13 @@ function OceanUI:CreateWindow(config)
 					Enum.ThumbnailType.AvatarBust,
 					Enum.ThumbnailSize.Size100x100
 				)
-				if thumb then _privacyCeoThumb = thumb end
+				if thumb then
+					_privacyCeoThumb = thumb
+					-- if privacy is already active when thumbnail finishes loading, update immediately
+					if _privacyActive and _privacyAvatarImg then
+						_privacyAvatarImg.Image = thumb
+					end
+				end
 			end)
 		end)
 
