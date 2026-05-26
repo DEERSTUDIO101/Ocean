@@ -2343,6 +2343,170 @@ function OceanUI:CreateWindow(config)
 			}
 		end
 
+		function Tab:AddImageView(opts)
+			opts = opts or {}
+			rowCounter = rowCounter + 1
+
+			local DEFAULT_H = 160
+			local IMG_H     = opts.Height or DEFAULT_H
+			local MIN_H, MAX_H = 60, 400
+
+			-- outer container (auto-resizes)
+			local r = frame(scroll, {
+				name="ImgViewRow", colorKey="bg", trans=1,
+				size=UDim2.new(1,0,0, IMG_H + 82), z=7,
+			})
+			r.LayoutOrder = rowCounter
+
+			frame(r,{
+				name="Div", colorKey="border",
+				size=UDim2.new(1,0,0,1),
+				pos=UDim2.new(0,0,1,-1), z=8,
+			})
+
+			-- title label
+			if opts.Title then
+				lbl(r,{
+					text=opts.Title, font=Enum.Font.GothamMedium, size=13, colorKey="text",
+					sz=UDim2.new(1,0,0,18), pos=UDim2.new(0,0,0,6), z=8,
+				})
+			end
+
+			local topPad = opts.Title and 26 or 4
+
+			-- image frame
+			local imgHolder = frame(r,{
+				name="ImgHolder", colorKey="raised",
+				size=UDim2.new(1,0,0,IMG_H),
+				pos=UDim2.new(0,0,0,topPad), z=8,
+			})
+			rnd(imgHolder, 6)
+			brd(imgHolder,"border",1)
+
+			local imgLabel = inst("ImageLabel",{
+				BackgroundTransparency=1,
+				Image = opts.Image or "",
+				Size=UDim2.fromScale(1,1),
+				ScaleType=Enum.ScaleType.Fit,
+				ZIndex=9,
+			}, imgHolder)
+			rnd(imgLabel, 6)
+
+			-- placeholder text when no image
+			local placeholderLbl = lbl(imgHolder,{
+				text="No image", font=Enum.Font.Gotham, size=12, colorKey="muted",
+				sz=UDim2.fromScale(1,1), xa=Enum.TextXAlignment.Center, z=10,
+			})
+			placeholderLbl.Visible = (opts.Image == nil or opts.Image == "")
+
+			-- URL textbox row
+			local tbRow = frame(r,{
+				name="UrlRow", colorKey="bg", trans=1,
+				size=UDim2.new(1,0,0,28),
+				pos=UDim2.new(0,0,0, topPad + IMG_H + 6), z=8,
+			})
+
+			local urlBox = inst("TextBox",{
+				BackgroundColor3=K.raised,
+				BackgroundTransparency=0,
+				BorderSizePixel=0,
+				PlaceholderText="Paste image URL...",
+				PlaceholderColor3=K.muted,
+				Text = opts.Image or "",
+				TextColor3=K.text,
+				Font=Enum.Font.Gotham,
+				TextSize=12,
+				TextXAlignment=Enum.TextXAlignment.Left,
+				ClearTextOnFocus=false,
+				Size=UDim2.new(1,0,1,0),
+				ZIndex=9,
+			}, tbRow)
+			rnd(urlBox, 5)
+			brd(urlBox,"border",1)
+			pad(urlBox, 8, 8, 0, 0)
+			registerThemeUpdater(function()
+				urlBox.BackgroundColor3=K.raised
+				urlBox.TextColor3=K.text
+				urlBox.PlaceholderColor3=K.muted
+			end, urlBox)
+
+			-- height slider row
+			local slRow = frame(r,{
+				name="SlRow", colorKey="bg", trans=1,
+				size=UDim2.new(1,0,0,28),
+				pos=UDim2.new(0,0,0, topPad + IMG_H + 40), z=8,
+			})
+
+			lbl(slRow,{
+				text="Height", font=Enum.Font.Gotham, size=11, colorKey="muted",
+				sz=UDim2.new(0,42,1,0), pos=UDim2.new(0,0,0,0), z=9,
+			})
+
+			local sliderWrap = frame(slRow,{
+				name="SlWrap", colorKey="bg", trans=1,
+				size=UDim2.new(1,-86,1,0), pos=UDim2.new(0,44,0,0), z=9,
+			})
+			local sl = makeSlider(sliderWrap, MIN_H, MAX_H, IMG_H)
+			sl.frame.Size = UDim2.fromScale(1,1)
+			sl.frame.Position = UDim2.fromScale(0,0)
+
+			local heightValLbl = lbl(slRow,{
+				text=tostring(IMG_H).."px", font=Enum.Font.GothamBold, size=11, colorKey="white",
+				sz=UDim2.new(0,38,1,0), pos=UDim2.new(1,-38,0,0), xa=Enum.TextXAlignment.Right, z=9,
+			})
+
+			-- live update helpers
+			local currentH = IMG_H
+			local function applyHeight(h)
+				currentH = math.floor(h)
+				heightValLbl.Text = tostring(currentH).."px"
+				imgHolder.Size     = UDim2.new(1,0,0,currentH)
+				tbRow.Position     = UDim2.new(0,0,0, topPad+currentH+6)
+				slRow.Position     = UDim2.new(0,0,0, topPad+currentH+40)
+				r.Size             = UDim2.new(1,0,0, topPad+currentH+82)
+			end
+
+			sl.changed:Connect(function(v) applyHeight(v) end)
+
+			local function applyUrl(url)
+				url = url:match("^%s*(.-)%s*$") -- trim
+				if url == "" then
+					imgLabel.Image = ""
+					placeholderLbl.Visible = true
+				else
+					imgLabel.Image = url
+					placeholderLbl.Visible = false
+				end
+				if opts.Callback then pcall(opts.Callback, url, currentH) end
+			end
+
+			urlBox.FocusLost:Connect(function() applyUrl(urlBox.Text) end)
+			-- also apply on enter
+			urlBox:GetPropertyChangedSignal("Text"):Connect(function()
+				if urlBox.Text:sub(-1) == "\n" then
+					urlBox.Text = urlBox.Text:gsub("\n","")
+					applyUrl(urlBox.Text)
+				end
+			end)
+
+			if opts.Image and opts.Image ~= "" then
+				applyUrl(opts.Image)
+			end
+
+			return {
+				SetImage = function(_, url)
+					urlBox.Text = url
+					applyUrl(url)
+				end,
+				SetHeight = function(_, h)
+					sl.setValue(h)
+					applyHeight(h)
+				end,
+				GetImage  = function() return imgLabel.Image end,
+				GetHeight = function() return currentH end,
+			}
+		end
+
 		function Tab:AddSeparator()
 			rowCounter = rowCounter + 1
 			local r = frame(scroll,{
