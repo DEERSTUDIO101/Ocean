@@ -1011,6 +1011,7 @@ local function makeTextBox(parent, placeholder, defaultText)
 		TextSize = 14,
 		TextXAlignment = Enum.TextXAlignment.Left,
 		ClearTextOnFocus = false,
+		TextTruncate = Enum.TextTruncate.AtEnd,
 		Size = UDim2.new(0,160,0,32),
 		ZIndex = 10,
 	}, parent)
@@ -1677,14 +1678,6 @@ function OceanUI:CreateWindow(config)
 		end
 	end
 
-	-- Privacy mode state (Window-scope damit SetPrivacy darauf zugreifen kann)
-	local _privacyActive    = false
-	local _privacyRealName  = player.DisplayName
-	local _privacyRealThumb = ""
-	local _privacyCeoThumb  = "rbxthumb://type=AvatarBust&id=20986&w=100&h=100"
-	local _privacyNameLbl   = nil
-	local _privacyAvatarImg = nil
-
 	if true then -- always create sidebar (desktop + mobile)
 		sidebar = frame(body,{
 			name="Sidebar", colorKey="bg", trans=1,
@@ -1742,16 +1735,14 @@ function OceanUI:CreateWindow(config)
 			ScaleType=Enum.ScaleType.Crop,
 		}, avatarHolder)
 		rnd(avatarImg,99)
-		_privacyAvatarImg = avatarImg
 
 		local txtX = AVA + 16
-		local profileNameLbl = lbl(profileSection,{
+		lbl(profileSection,{
 			text=player.DisplayName,
 			font=Enum.Font.GothamBold, size=15, colorKey="text",
 			sz=UDim2.new(1,-txtX-4,0,18),
 			pos=UDim2.new(0,txtX,0.5,-15), z=7,
 		})
-		_privacyNameLbl = profileNameLbl
 
 		local execLbl = lbl(profileSection,{
 			text="",
@@ -1768,12 +1759,7 @@ function OceanUI:CreateWindow(config)
 					Enum.ThumbnailSize.Size100x100
 				)
 			end)
-			if ok and thumb then
-				_privacyRealThumb = thumb
-				if not _privacyActive then
-					avatarImg.Image = thumb
-				end
-			end
+			if ok and type(thumb) == "string" then avatarImg.Image = thumb end
 
 			local execName = "Unknown"
 			pcall(function()
@@ -2054,6 +2040,8 @@ function OceanUI:CreateWindow(config)
 					return tog.getState()
 				end,
 				Changed = tog.changed,
+				Lock = function() r.BackgroundTransparency = 0; r:FindFirstChildWhichIsA("TextLabel") and nil; pcall(function() for _, c in ipairs(r:GetDescendants()) do if c:IsA("GuiObject") then c.Interactable = false end end end); tw(r,{BackgroundColor3=Color3.fromRGB(20,20,20)},0.1):Play() end,
+				Unlock = function() pcall(function() for _, c in ipairs(r:GetDescendants()) do if c:IsA("GuiObject") then c.Interactable = true end end end); tw(r,{BackgroundColor3=K.bg},0.1):Play() end,
 			}
 		end
 
@@ -2088,6 +2076,8 @@ function OceanUI:CreateWindow(config)
 					return sl.getValue()
 				end,
 				Changed = sl.changed,
+				Lock = function() pcall(function() r.BackgroundTransparency = 0.5; r:FindFirstChildWhichIsA("TextLabel") and nil; for _, c in ipairs(r:GetDescendants()) do if c:IsA("GuiObject") then c.Interactable = false end end; tw(r,{BackgroundColor3=Color3.fromRGB(20,20,20)},0.1):Play() end) end,
+				Unlock = function() pcall(function() r.BackgroundTransparency = 0; for _, c in ipairs(r:GetDescendants()) do if c:IsA("GuiObject") then c.Interactable = true end end; tw(r,{BackgroundColor3=K.bg},0.1):Play() end) end,
 			}
 		end
 
@@ -2157,6 +2147,8 @@ function OceanUI:CreateWindow(config)
 			return {
 				Set = function(_, newText) l.Text = newText end,
 				Get = function() return l.Text end,
+				Lock = function() pcall(function() r.BackgroundTransparency = 0.5; r:FindFirstChildWhichIsA("TextLabel") and nil; for _, c in ipairs(r:GetDescendants()) do if c:IsA("GuiObject") then c.Interactable = false end end; tw(r,{BackgroundColor3=Color3.fromRGB(20,20,20)},0.1):Play() end) end,
+				Unlock = function() pcall(function() r.BackgroundTransparency = 0; for _, c in ipairs(r:GetDescendants()) do if c:IsA("GuiObject") then c.Interactable = true end end; tw(r,{BackgroundColor3=K.bg},0.1):Play() end) end,
 			}
 		end
 
@@ -2186,6 +2178,8 @@ function OceanUI:CreateWindow(config)
 				SetOptions = function(_, newOpts) dd.setOptions(newOpts) end,
 				Refresh = function(_, newOpts) dd.setOptions(newOpts) end,
 				Changed = dd.changed,
+				Lock = function() pcall(function() r.BackgroundTransparency = 0.5; r:FindFirstChildWhichIsA("TextLabel") and nil; for _, c in ipairs(r:GetDescendants()) do if c:IsA("GuiObject") then c.Interactable = false end end; tw(r,{BackgroundColor3=Color3.fromRGB(20,20,20)},0.1):Play() end) end,
+				Unlock = function() pcall(function() r.BackgroundTransparency = 0; for _, c in ipairs(r:GetDescendants()) do if c:IsA("GuiObject") then c.Interactable = true end end; tw(r,{BackgroundColor3=K.bg},0.1):Play() end) end,
 			}
 		end
 
@@ -2215,6 +2209,8 @@ function OceanUI:CreateWindow(config)
 				SetOptions = function(_, newOpts) dd.setOptions(newOpts) end,
 				Refresh = function(_, newOpts) dd.setOptions(newOpts) end,
 				Changed = dd.changed,
+				Lock = function() pcall(function() r.BackgroundTransparency = 0.5; r:FindFirstChildWhichIsA("TextLabel") and nil; for _, c in ipairs(r:GetDescendants()) do if c:IsA("GuiObject") then c.Interactable = false end end; tw(r,{BackgroundColor3=Color3.fromRGB(20,20,20)},0.1):Play() end) end,
+				Unlock = function() pcall(function() r.BackgroundTransparency = 0; for _, c in ipairs(r:GetDescendants()) do if c:IsA("GuiObject") then c.Interactable = true end end; tw(r,{BackgroundColor3=K.bg},0.1):Play() end) end,
 			}
 		end
 
@@ -2235,6 +2231,8 @@ function OceanUI:CreateWindow(config)
 				Set = function(_, text) tb.setText(text) end,
 				Get = function() return tb.getText() end,
 				Changed = tb.changed,
+				Lock = function() pcall(function() r.BackgroundTransparency = 0.5; r:FindFirstChildWhichIsA("TextLabel") and nil; for _, c in ipairs(r:GetDescendants()) do if c:IsA("GuiObject") then c.Interactable = false end end; tw(r,{BackgroundColor3=Color3.fromRGB(20,20,20)},0.1):Play() end) end,
+				Unlock = function() pcall(function() r.BackgroundTransparency = 0; for _, c in ipairs(r:GetDescendants()) do if c:IsA("GuiObject") then c.Interactable = true end end; tw(r,{BackgroundColor3=K.bg},0.1):Play() end) end,
 			}
 		end
 
@@ -2266,6 +2264,8 @@ function OceanUI:CreateWindow(config)
 				Set = function(_, color) cp.setValue(color) end,
 				Get = function() return cp.getValue() end,
 				Changed = cp.changed,
+				Lock = function() pcall(function() r.BackgroundTransparency = 0.5; r:FindFirstChildWhichIsA("TextLabel") and nil; for _, c in ipairs(r:GetDescendants()) do if c:IsA("GuiObject") then c.Interactable = false end end; tw(r,{BackgroundColor3=Color3.fromRGB(20,20,20)},0.1):Play() end) end,
+				Unlock = function() pcall(function() r.BackgroundTransparency = 0; for _, c in ipairs(r:GetDescendants()) do if c:IsA("GuiObject") then c.Interactable = true end end; tw(r,{BackgroundColor3=K.bg},0.1):Play() end) end,
 			}
 		end
 
@@ -2323,6 +2323,8 @@ function OceanUI:CreateWindow(config)
 				end,
 				Get = function() return currentKey end,
 				Changed = changedEvent.Event,
+				Lock = function() pcall(function() r.BackgroundTransparency = 0.5; r:FindFirstChildWhichIsA("TextLabel") and nil; for _, c in ipairs(r:GetDescendants()) do if c:IsA("GuiObject") then c.Interactable = false end end; tw(r,{BackgroundColor3=Color3.fromRGB(20,20,20)},0.1):Play() end) end,
+				Unlock = function() pcall(function() r.BackgroundTransparency = 0; for _, c in ipairs(r:GetDescendants()) do if c:IsA("GuiObject") then c.Interactable = true end end; tw(r,{BackgroundColor3=K.bg},0.1):Play() end) end,
 			}
 		end
 
@@ -2333,287 +2335,6 @@ function OceanUI:CreateWindow(config)
 				size=UDim2.new(1,0,0,12), z=7,
 			})
 			r.LayoutOrder = rowCounter
-		end
-
-		function Tab:AddImageView(opts)
-			opts = opts or {}
-			rowCounter = rowCounter + 1
-			local imgH = opts.Height or 160
-			local r = frame(scroll,{
-				name="ImgViewRow", colorKey="bg", trans=1,
-				size=UDim2.new(1,0,0,imgH+54), z=7,
-			})
-			r.LayoutOrder = rowCounter
-
-			-- Title row
-			lbl(r,{
-				text=opts.Title or "Image", font=Enum.Font.GothamMedium, size=14, colorKey="text",
-				sz=UDim2.new(1,0,0,20), pos=UDim2.new(0,0,0,4), z=8,
-			})
-
-			-- Image preview
-			local imgHolder = frame(r,{
-				name="ImgHolder", colorKey="raised",
-				size=UDim2.new(1,0,0,imgH), pos=UDim2.new(0,0,0,28), z=8,
-			})
-			rnd(imgHolder,6)
-			brd(imgHolder,"border",1)
-
-			local previewImg = inst("ImageLabel",{
-				BackgroundTransparency=1, Image="",
-				Size=UDim2.fromScale(1,1), ZIndex=9, ScaleType=Enum.ScaleType.Crop,
-			}, imgHolder)
-			rnd(previewImg,6)
-
-			local statusLbl = lbl(imgHolder,{
-				text="No image", font=Enum.Font.GothamMedium, size=13, colorKey="muted",
-				sz=UDim2.fromScale(1,1), pos=UDim2.fromScale(0,0),
-				xa=Enum.TextXAlignment.Center, ya=Enum.TextYAlignment.Center, z=10,
-			})
-
-			-- URL textbox row
-			local urlBox = inst("TextBox",{
-				Name="UrlBox", BackgroundColor3=K.raised, BorderSizePixel=0,
-				Font=Enum.Font.GothamMedium, Text="", PlaceholderText="https://...",
-				PlaceholderColor3=K.muted, TextColor3=K.text, TextSize=12,
-				TextXAlignment=Enum.TextXAlignment.Left, ClearTextOnFocus=false,
-				Size=UDim2.new(1,0,0,28), Position=UDim2.new(0,0,0,imgH+32), ZIndex=9,
-			}, r)
-			rnd(urlBox,5)
-			brd(urlBox,"border",1)
-			pad(urlBox,8,8,0,0)
-			registerThemeUpdater(function()
-				urlBox.BackgroundColor3=K.raised; urlBox.PlaceholderColor3=K.muted; urlBox.TextColor3=K.text
-			end, urlBox)
-
-			-- Image resolver (executor-compatible)
-			local _imgMemCache = {}
-			local function resolveImg(url, callback)
-				if not url or url == "" then callback("") return end
-				if not url:match("^https?://") then callback(url) return end
-				if _imgMemCache[url] then callback(_imgMemCache[url]) return end
-				statusLbl.Text = "Loading..."
-				previewImg.Image = ""
-				task.spawn(function()
-					local cacheFolder = "OceanUI_ImgCache"
-					local cacheKey = cacheFolder.."/"..url:gsub("[^%w]","_"):sub(1,80)..".bin"
-					pcall(function() if not isfolder(cacheFolder) then makefolder(cacheFolder) end end)
-					if pcall(function() if isfile(cacheKey) then end end) and isfile(cacheKey) then
-						local ok2, asset = pcall(getcustomasset or getsynasset, cacheKey)
-						if ok2 and asset then
-							_imgMemCache[url] = asset
-							callback(asset)
-							return
-						end
-					end
-					local reqFn = request or http_request or syn and syn.request or httprequest
-					if not reqFn then callback(url) return end
-					local ok, res = pcall(reqFn, {Url=url, Method="GET"})
-					if ok and res and res.Body and #res.Body > 0 then
-						pcall(writefile, cacheKey, res.Body)
-						local ok2, asset = pcall(getcustomasset or getsynasset or function() end, cacheKey)
-						if ok2 and asset then
-							_imgMemCache[url] = asset
-							callback(asset)
-						else
-							callback(url)
-						end
-					else
-						callback(url)
-					end
-				end)
-			end
-
-			local function applyUrl(url)
-				resolveImg(url, function(asset)
-					if asset and asset ~= "" then
-						previewImg.Image = asset
-						statusLbl.Text = ""
-					else
-						previewImg.Image = ""
-						statusLbl.Text = "Failed to load"
-					end
-					if opts.Callback then pcall(opts.Callback, url, imgH) end
-				end)
-			end
-
-			-- Apply initial image
-			if opts.Image and opts.Image ~= "" then
-				urlBox.Text = opts.Image
-				applyUrl(opts.Image)
-			end
-
-			urlBox.FocusLost:Connect(function()
-				applyUrl(urlBox.Text)
-			end)
-
-			frame(r,{
-				name="Div", colorKey="border",
-				size=UDim2.new(1,0,0,1), pos=UDim2.new(0,0,1,-1), z=8,
-			})
-
-			local ctrl = {
-				SetImage = function(_, url)
-					urlBox.Text = url or ""
-					applyUrl(url or "")
-				end,
-				GetImage = function() return urlBox.Text end,
-			}
-			return ctrl
-		end
-
-		function Tab:AddBackgroundPicker(opts)
-			opts = opts or {}
-			rowCounter = rowCounter + 1
-			local r = frame(scroll,{
-				name="BgPickerRow", colorKey="bg", trans=1,
-				size=UDim2.new(1,0,0,100), z=7,
-			})
-			r.LayoutOrder = rowCounter
-
-			lbl(r,{
-				text=opts.Title or "Background Image", font=Enum.Font.GothamMedium, size=14, colorKey="text",
-				sz=UDim2.new(1,0,0,20), pos=UDim2.new(0,0,0,4), z=8,
-			})
-			lbl(r,{
-				text="URL", font=Enum.Font.Gotham, size=12, colorKey="muted",
-				sz=UDim2.new(0,30,0,16), pos=UDim2.new(0,0,0,28), z=8,
-			})
-
-			local urlBox = inst("TextBox",{
-				Name="BgUrl", BackgroundColor3=K.raised, BorderSizePixel=0,
-				Font=Enum.Font.GothamMedium, Text=opts.Default or "",
-				PlaceholderText="https://...",
-				PlaceholderColor3=K.muted, TextColor3=K.text, TextSize=12,
-				TextXAlignment=Enum.TextXAlignment.Left, ClearTextOnFocus=false,
-				Size=UDim2.new(1,-36,0,26), Position=UDim2.new(0,36,0,26), ZIndex=9,
-			}, r)
-			rnd(urlBox,5)
-			brd(urlBox,"border",1)
-			pad(urlBox,6,6,0,0)
-			registerThemeUpdater(function()
-				urlBox.BackgroundColor3=K.raised; urlBox.PlaceholderColor3=K.muted; urlBox.TextColor3=K.text
-			end, urlBox)
-
-			lbl(r,{
-				text="Opacity", font=Enum.Font.Gotham, size=12, colorKey="muted",
-				sz=UDim2.new(0,48,0,16), pos=UDim2.new(0,0,0,60), z=8,
-			})
-
-			local initOp = opts.Opacity or 65
-			local opSlider = makeSlider(r, 0, 100, initOp)
-			opSlider.frame.Position = UDim2.new(0,52,0,56)
-			opSlider.frame.Size = UDim2.new(1,-100,0,24)
-			opSlider.frame.ZIndex = 8
-
-			local opLbl = lbl(r,{
-				text=tostring(initOp).."%", font=Enum.Font.GothamBold, size=12, colorKey="white",
-				sz=UDim2.new(0,38,0,20), pos=UDim2.new(1,-38,0,60), z=9,
-				xa=Enum.TextXAlignment.Right,
-			})
-
-			local _bgImgCache = {}
-			local function resolveAndApplyBg(url, opacity)
-				if not url or url == "" then
-					Window:SetBackground("", opacity)
-					return
-				end
-				if not url:match("^https?://") then
-					Window:SetBackground(url, opacity)
-					return
-				end
-				if _bgImgCache[url] then
-					Window:SetBackground(_bgImgCache[url], opacity)
-					return
-				end
-				task.spawn(function()
-					local cacheFolder = "OceanUI_ImgCache"
-					local cacheKey = cacheFolder.."/"..url:gsub("[^%w]","_"):sub(1,80)..".bin"
-					pcall(function() if not isfolder(cacheFolder) then makefolder(cacheFolder) end end)
-					if pcall(function() if isfile(cacheKey) then end end) and isfile(cacheKey) then
-						local ok2, asset = pcall(getcustomasset or getsynasset, cacheKey)
-						if ok2 and asset then
-							_bgImgCache[url] = asset
-							Window:SetBackground(asset, opacity)
-							return
-						end
-					end
-					local reqFn = request or http_request or syn and syn.request or httprequest
-					if reqFn then
-						local ok, res = pcall(reqFn, {Url=url, Method="GET"})
-						if ok and res and res.Body and #res.Body > 0 then
-							pcall(writefile, cacheKey, res.Body)
-							local ok2, asset = pcall(getcustomasset or getsynasset or function() end, cacheKey)
-							if ok2 and asset then
-								_bgImgCache[url] = asset
-								Window:SetBackground(asset, opacity)
-								return
-							end
-						end
-					end
-					Window:SetBackground(url, opacity)
-				end)
-			end
-
-			local currentUrl = opts.Default or ""
-			local currentOp  = initOp
-
-			local function apply()
-				resolveAndApplyBg(currentUrl, currentOp / 100)
-				if opts.Callback then pcall(opts.Callback, currentUrl, currentOp) end
-			end
-
-			urlBox.FocusLost:Connect(function()
-				currentUrl = urlBox.Text
-				apply()
-			end)
-
-			opSlider.changed:Connect(function(v)
-				currentOp = math.round(v)
-				opLbl.Text = tostring(currentOp).."%"
-				apply()
-			end)
-
-			frame(r,{
-				name="Div", colorKey="border",
-				size=UDim2.new(1,0,0,1), pos=UDim2.new(0,0,1,-1), z=8,
-			})
-
-			return {
-				Get = function()
-					return {url=currentUrl, opacity=currentOp}
-				end,
-				Set = function(_, val)
-					if type(val) == "table" then
-						currentUrl = val.url or ""
-						currentOp  = val.opacity or initOp
-						urlBox.Text = currentUrl
-						opSlider.setValue(currentOp, true)
-						opLbl.Text = tostring(math.round(currentOp)).."%"
-						apply()
-					end
-				end,
-			}
-		end
-
-		function Tab:AddPrivacyToggle(first, second)
-			local opts = second
-			if type(first) == "table" and not second then
-				opts = first
-			elseif not first and not second then
-				opts = {}
-			end
-			opts = opts or {}
-			return self:AddToggle({
-				Title    = opts.Title    or "Privacy Mode",
-				Subtitle = opts.Subtitle or "Hides your name & avatar",
-				Icon     = opts.Icon     or "eye-off",
-				Default  = opts.Default  or false,
-				Callback = function(state)
-					Window:SetPrivacy(state)
-					if opts.Callback then pcall(opts.Callback, state) end
-				end,
-			})
 		end
 
 		return Tab
@@ -2817,54 +2538,6 @@ function OceanUI:CreateWindow(config)
 		task.delay(duration, dismiss)
 	end
 
-	function Window:SetPrivacy(state)
-		_privacyActive = state == true
-		if _privacyNameLbl then
-			_privacyNameLbl.Text = _privacyActive and "Player-123" or _privacyRealName
-		end
-		if _privacyAvatarImg then
-			_privacyAvatarImg.Image = _privacyActive and _privacyCeoThumb or _privacyRealThumb
-		end
-	end
-
-	local _bgImageLabel = nil
-
-	function Window:SetBackground(url, opacity)
-		if _bgImageLabel and _bgImageLabel.Parent then
-			_bgImageLabel:Destroy()
-			_bgImageLabel = nil
-		end
-
-		local hasBg = url and url ~= ""
-
-		local sidebar = body:FindFirstChild("Sidebar")
-		local ca      = body:FindFirstChild("ContentArea")
-		if sidebar then sidebar.BackgroundTransparency = hasBg and 1 or 0 end
-		if ca      then ca.BackgroundTransparency      = hasBg and 1 or 0 end
-		if ca then
-			for _, tab in ipairs(ca:GetChildren()) do
-				if tab.Name:sub(1,4) == "Tab_" and tab:IsA("Frame") then
-					tab.BackgroundTransparency = hasBg and 1 or 0
-				end
-			end
-			-- Fisch (BgLogo) ein/ausblenden
-			local bgLogo = ca:FindFirstChild("BgLogo")
-			if bgLogo then bgLogo.Visible = not hasBg end
-		end
-
-		if not hasBg then return end
-
-		local bgImg = inst("ImageLabel",{
-			Name="WinBackground", BackgroundTransparency=1,
-			Image=url,
-			Size=UDim2.fromScale(1,1), Position=UDim2.fromScale(0,0),
-			ZIndex=4, ScaleType=Enum.ScaleType.Crop,
-			ImageTransparency=opacity or 0.35,
-		}, body)
-		rnd(bgImg, 10)
-		_bgImageLabel = bgImg
-	end
-
 	function Window:Destroy()
 		if win:GetAttribute("Closing") then return end
 		win:SetAttribute("Closing", true)
@@ -3002,3 +2675,4 @@ function OceanUI:CreateWindow(config)
 end
 
 return OceanUI
+
